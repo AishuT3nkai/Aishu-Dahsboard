@@ -7,7 +7,7 @@ const ADMINISTRATOR = 0x8;
 export function buildAuthorizeUrl(state: string) {
   const params = new URLSearchParams({
     client_id: requireEnv("DISCORD_CLIENT_ID"),
-    redirect_uri: requireEnv("DISCORD_REDIRECT_URI"),
+    redirect_uri: requireEnv("DISCORD_REDIRECT_URI", "DISCORD_REDIRECT_URL"),
     response_type: "code",
     scope: "identify guilds",
     state,
@@ -22,7 +22,7 @@ export async function exchangeCodeForToken(code: string) {
     client_secret: requireEnv("DISCORD_CLIENT_SECRET"),
     grant_type: "authorization_code",
     code,
-    redirect_uri: requireEnv("DISCORD_REDIRECT_URI"),
+    redirect_uri: requireEnv("DISCORD_REDIRECT_URI", "DISCORD_REDIRECT_URL"),
   });
 
   const res = await fetch(`${API_BASE}/oauth2/token`, {
@@ -84,8 +84,12 @@ export async function fetchManageableGuilds(
     .map((g) => ({ id: g.id, name: g.name, icon: g.icon }));
 }
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
-  return value;
+function requireEnv(name: string, ...aliases: string[]): string {
+  for (const key of [name, ...aliases]) {
+    const value = process.env[key];
+    if (value) return value;
+  }
+  throw new Error(
+    `Missing required environment variable: ${[name, ...aliases].join(" or ")}`
+  );
 }
