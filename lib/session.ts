@@ -61,9 +61,10 @@ export async function readSession(): Promise<SessionPayload | null> {
  * Discord Administrator / Manage Server permissions are never consulted here.
  */
 export function isAuthorizedAdmin(discordUserId: string): boolean {
-  const allowed = [process.env.ADMIN_USER_ID_1, process.env.ADMIN_USER_ID_2].filter(
-    Boolean
-  );
+  const allowed = [
+    process.env.ADMIN_USER_ID_1 ?? process.env.DISCORD_USER_ID_1,
+    process.env.ADMIN_USER_ID_2 ?? process.env.DISCORD_USER_ID_2,
+  ].filter(Boolean);
   return allowed.includes(discordUserId);
 }
 
