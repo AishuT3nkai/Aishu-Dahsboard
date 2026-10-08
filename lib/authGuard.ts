@@ -31,22 +31,30 @@ export async function requireAdminSession() {
 export async function authorizedGuildsFor(
   discordAccessToken: string
 ): Promise<DiscordGuildSummary[]> {
-  const [botGuilds, userGuilds] = await Promise.all([
-    bridge.listBotGuilds().catch((err) => {
-      if (err instanceof BridgeNotConfiguredError) return [];
-      throw err;
-    }),
-    fetchManageableGuilds(discordAccessToken),
-  ]);
-
-  const botGuildIds = new Set(botGuilds.map((g) => g.id));
+  const userGuilds = await fetchManageableGuilds(discordAccessToken);
   const pinned = process.env.ADMIN_GUILD_ID;
 
-  return userGuilds.filter((g) => {
-    if (!botGuildIds.has(g.id)) return false;
-    if (pinned && g.id !== pinned) return false;
-    return true;
-  });
+  // When a single guild is configured, avoid the fragile /api/guilds discovery
+  // call entirely. We still verify that the logged-in admin can manage the
+  // pinned guild, then verify the bot can actually serve that guild.
+  if (pinned) {
+    const userGuild = userGuilds.find((guild) => guild.id === pinned);
+    if (!userGuild) return [];
+
+    try {
+      await bridge.getOverview(pinned);
+    } catch (err) {
+      if (err instanceof BridgeNotConfiguredError) return [];
+      throw err;
+    }
+
+    return [userGuild];
+  }
+
+  const botGuilds = await bridge.listBotGuilds();
+  const botGuildIds = new Set(botGuilds.map((g) => g.id));
+
+  return userGuilds.filter((g) => botGuildIds.has(g.id));
 }
 
 export async function requireAuthorizedGuild(
