@@ -33,21 +33,20 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.error ?? "Failed to load Discord servers.");
 
-        const nextGuilds: DiscordGuildSummary[] = Array.isArray(body.guilds)
-          ? body.guilds.filter(
-              (guild: unknown): guild is DiscordGuildSummary =>
-                typeof guild === "object" &&
-                guild !== null &&
-                "id" in guild &&
-                typeof guild.id === "string" &&
-                "name" in guild &&
-                typeof guild.name === "string"
-            ).map((guild) => ({
-              id: guild.id,
-              name: guild.name,
-              icon: typeof guild.icon === "string" ? guild.icon : null,
-            }))
-          : [];
+        const rawGuilds: unknown[] = Array.isArray(body.guilds) ? body.guilds : [];
+        const nextGuilds: DiscordGuildSummary[] = rawGuilds
+          .filter(
+            (guild): guild is { id: string; name: string; icon?: unknown } => {
+              if (typeof guild !== "object" || guild === null) return false;
+              const record = guild as Record<string, unknown>;
+              return typeof record.id === "string" && typeof record.name === "string";
+            }
+          )
+          .map((guild) => ({
+            id: guild.id,
+            name: guild.name,
+            icon: typeof guild.icon === "string" ? guild.icon : null,
+          }));
         if (cancelled) return;
         setGuilds(nextGuilds);
 
