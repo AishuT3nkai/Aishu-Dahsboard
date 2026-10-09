@@ -63,27 +63,6 @@ export interface AutomodConfig {
   action_cooldown: number;
 }
 
-export interface AutomodConfig {
-  enabled: boolean;
-  spam_enabled: boolean;
-  spam_messages: number;
-  spam_window: number;
-  duplicate_enabled: boolean;
-  duplicate_messages: number;
-  duplicate_window: number;
-  mention_enabled: boolean;
-  max_mentions: number;
-  links_enabled: boolean;
-  invites_enabled: boolean;
-  keywords: string[];
-  action: "delete" | "warn" | "timeout";
-  timeout_minutes: number;
-  escalation: boolean;
-  exempt_roles: string[];
-  exempt_channels: string[];
-  action_cooldown: number;
-}
-
 export interface ModerationConfig {
   logChannelId: string | null;
   muteRoleId: string | null;
