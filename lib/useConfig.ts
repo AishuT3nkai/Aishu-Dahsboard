@@ -17,7 +17,7 @@ interface UseConfigResult<T> {
 }
 
 export function useConfig<T>(endpoint: string): UseConfigResult<T> {
-  const { guildId } = useGuild();
+  const { guildId, loading: guildsLoading, error: guildsError } = useGuild();
   const [data, setData] = useState<T | null>(null);
   const [draft, setDraft] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,19 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    if (!guildId) return;
+    if (!guildId) {
+      setLoading(guildsLoading);
+      setData(null);
+      setDraft(null);
+      setBridgeUnconfigured(false);
+      setError(
+        guildsLoading
+          ? null
+          : guildsError ?? "No shared Discord server is available. Make sure Aishu Bot is in a server you can access."
+      );
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -52,7 +64,7 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
     return () => {
       cancelled = true;
     };
-  }, [endpoint, guildId, reloadTick]);
+  }, [endpoint, guildId, guildsLoading, guildsError, reloadTick]);
 
   const save = useCallback(async () => {
     if (!guildId || draft === null) return;
