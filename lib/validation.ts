@@ -20,6 +20,27 @@ export const welcomeGoodbyeSchema = z.object({
   goodbyeMessage: z.string().max(1000),
 });
 
+export const automodConfigSchema = z.object({
+  enabled: z.boolean(),
+  spam_enabled: z.boolean(),
+  spam_messages: z.number().int().min(2).max(20),
+  spam_window: z.number().int().min(2).max(60),
+  duplicate_enabled: z.boolean(),
+  duplicate_messages: z.number().int().min(2).max(20),
+  duplicate_window: z.number().int().min(2).max(60),
+  mention_enabled: z.boolean(),
+  max_mentions: z.number().int().min(1).max(20),
+  links_enabled: z.boolean(),
+  invites_enabled: z.boolean(),
+  keywords: z.array(z.string().min(1).max(100)).max(100),
+  action: z.enum(["delete", "warn", "timeout"]),
+  timeout_minutes: z.number().int().min(1).max(60),
+  escalation: z.boolean(),
+  exempt_roles: z.array(snowflake).max(100),
+  exempt_channels: z.array(snowflake).max(100),
+  action_cooldown: z.number().int().min(0).max(60),
+});
+
 export const moderationConfigSchema = z.object({
   logChannelId: optionalSnowflake,
   muteRoleId: optionalSnowflake,
