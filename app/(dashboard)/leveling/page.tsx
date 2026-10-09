@@ -133,56 +133,116 @@ function MembersPanel() {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<LevelingUserEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [savingUser, setSavingUser] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
   const [editing, setEditing] = useState<Record<string, string>>({});
 
-  const load = useCallback(() => {
-    if (!guildId) return;
+  const load = useCallback(async () => {
+    if (!guildId) {
+      setUsers(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    fetch(`/api/dashboard/leveling/users?guildId=${guildId}${search ? `&search=${encodeURIComponent(search)}` : ""}`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) {
-          if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
-          return;
-        }
-        setUsers(body.data);
-      })
-      .finally(() => setLoading(false));
+    setError(null);
+    try {
+      const params = new URLSearchParams({ guildId });
+      if (search.trim()) params.set("search", search.trim());
+      const res = await fetch(`/api/dashboard/leveling/users?${params.toString()}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
+        throw new Error(body.error ?? "Failed to load member XP.");
+      }
+      setBridgeUnconfigured(false);
+      setUsers(Array.isArray(body.data) ? body.data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load member XP.");
+    } finally {
+      setLoading(false);
+    }
   }, [guildId, search]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function setXp(userId: string) {
-    if (!guildId) return;
-    const value = Number(editing[userId]);
-    if (Number.isNaN(value)) return;
-    await fetch(`/api/dashboard/leveling/users/${userId}?guildId=${guildId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ xp: value }),
-    });
-    load();
+    if (!guildId || savingUser) return;
+    const rawValue = editing[userId];
+    if (rawValue === undefined || rawValue.trim() === "") {
+      setError("Enter an XP value before saving.");
+      return;
+    }
+    const value = Number(rawValue);
+    if (!Number.isSafeInteger(value) || value < 0) {
+      setError("XP must be a whole number of zero or greater.");
+      return;
+    }
+    setSavingUser(userId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/dashboard/leveling/users/${encodeURIComponent(userId)}?guildId=${encodeURIComponent(guildId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ xp: value }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? "Failed to update member XP.");
+      setEditing((current) => {
+        const next = { ...current };
+        delete next[userId];
+        return next;
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update member XP.");
+    } finally {
+      setSavingUser(null);
+    }
   }
 
   async function resetXp(userId: string) {
-    if (!guildId) return;
-    await fetch(`/api/dashboard/leveling/users/${userId}/reset?guildId=${guildId}`, { method: "POST" });
-    load();
+    if (!guildId || savingUser) return;
+    setSavingUser(userId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/dashboard/leveling/users/${encodeURIComponent(userId)}/reset?guildId=${encodeURIComponent(guildId)}`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? "Failed to reset member XP.");
+      setEditing((current) => {
+        const next = { ...current };
+        delete next[userId];
+        return next;
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset member XP.");
+    } finally {
+      setSavingUser(null);
+    }
   }
 
   if (bridgeUnconfigured) return null;
 
   return (
     <Card title="Member XP" description="Per-guild — XP never carries over between servers.">
-      <TextInput
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by username…"
-        className="mb-3"
-      />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <TextInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by username…"
+          className="min-w-0 flex-1"
+        />
+        <Button variant="secondary" onClick={() => void load()} disabled={loading || savingUser !== null}>
+          {loading ? "Refreshing…" : "Refresh"}
+        </Button>
+      </div>
+      {error && <p role="alert" className="mb-3 text-sm text-bad">{error}</p>}
+      {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to manage member XP.</p>}
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
-      {users && users.length === 0 && <p className="text-sm text-base-500">No members found.</p>}
+      {!loading && users && users.length === 0 && <p className="text-sm text-base-500">No members found.</p>}
       {users && users.length > 0 && (
         <div className="overflow-x-auto">
           <div className="min-w-[520px] space-y-1.5">
@@ -196,16 +256,18 @@ function MembersPanel() {
                 <span className="text-base-400">Lvl {u.level}</span>
                 <TextInput
                   className="w-24"
+                  inputType="number"
+                  min={0}
                   placeholder={String(u.xp)}
                   value={editing[u.userId] ?? ""}
                   onChange={(e) => setEditing({ ...editing, [u.userId]: e.target.value })}
                 />
                 <div className="flex gap-1">
-                  <Button variant="secondary" onClick={() => setXp(u.userId)}>
-                    Set
+                  <Button variant="secondary" disabled={savingUser !== null} onClick={() => void setXp(u.userId)}>
+                    {savingUser === u.userId ? "Saving…" : "Set"}
                   </Button>
-                  <Button variant="danger" onClick={() => resetXp(u.userId)}>
-                    Reset
+                  <Button variant="danger" disabled={savingUser !== null} onClick={() => void resetXp(u.userId)}>
+                    {savingUser === u.userId ? "Working…" : "Reset"}
                   </Button>
                 </div>
               </div>
