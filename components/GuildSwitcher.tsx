@@ -1,14 +1,29 @@
 "use client";
 
+import { RefreshCw } from "lucide-react";
 import { useGuild } from "./GuildProvider";
 
 export function GuildSwitcher() {
-  const { guilds, guildId, setGuildId, loading, error } = useGuild();
+  const { guilds, guildId, setGuildId, loading, error, reload } = useGuild();
 
   if (loading) return <div className="h-9 w-48 animate-pulse rounded-card bg-base-800" />;
 
   if (error) {
-    return <div className="rounded-card border border-bad/30 bg-bad/10 px-3 py-2 text-xs text-bad">{error}</div>;
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <div role="alert" className="rounded-card border border-bad/30 bg-bad/10 px-3 py-2 text-xs text-bad">
+          {error}
+        </div>
+        <button
+          type="button"
+          onClick={reload}
+          className="focus-ring inline-flex items-center gap-1.5 rounded-card border border-base-700 px-3 py-2 text-xs text-base-200 hover:bg-base-800"
+        >
+          <RefreshCw size={13} />
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (guilds.length === 0) {
