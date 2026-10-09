@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useGuild } from "@/components/GuildProvider";
 import { Activity, ShieldAlert, ShieldCheck, Clock3, UsersRound, Eye } from "lucide-react";
 import { useConfig } from "@/lib/useConfig";
 import { PageHeader } from "@/components/PageHeader";
@@ -49,7 +50,56 @@ function PolicyToggle({
 export default function VerificationPage() {
   const { draft, setDraft, loading, saving, error, bridgeUnconfigured, dirty, save, data } =
     useConfig<VerificationConfig>("/api/dashboard/verification");
+  const { guildId } = useGuild();
   const [antiRaid, setAntiRaid] = useState<AntiRaidDraft>(initialAntiRaidDraft);
+  const [antiRaidLoaded, setAntiRaidLoaded] = useState(false);
+
+  // These advanced controls are dashboard-only until the bot bridge supports them.
+  // Keep the draft per guild in this browser so a refresh does not silently discard it.
+  useEffect(() => {
+    setAntiRaidLoaded(false);
+    if (!guildId) {
+      setAntiRaid(initialAntiRaidDraft);
+      setAntiRaidLoaded(true);
+      return;
+    }
+
+    try {
+      const stored = window.localStorage.getItem(`aishu:anti-raid-draft:${guildId}`);
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (parsed && typeof parsed === "object") {
+          const value = parsed as Partial<AntiRaidDraft>;
+          setAntiRaid({
+            enabled: typeof value.enabled === "boolean" ? value.enabled : initialAntiRaidDraft.enabled,
+            captchaEnabled: typeof value.captchaEnabled === "boolean" ? value.captchaEnabled : initialAntiRaidDraft.captchaEnabled,
+            quarantineEnabled: typeof value.quarantineEnabled === "boolean" ? value.quarantineEnabled : initialAntiRaidDraft.quarantineEnabled,
+            accountAgeGateEnabled: typeof value.accountAgeGateEnabled === "boolean" ? value.accountAgeGateEnabled : initialAntiRaidDraft.accountAgeGateEnabled,
+            joinRateLimit: typeof value.joinRateLimit === "number" ? Math.max(1, Math.min(50, value.joinRateLimit)) : initialAntiRaidDraft.joinRateLimit,
+            joinRateWindowSeconds: typeof value.joinRateWindowSeconds === "number" ? Math.max(5, Math.min(300, value.joinRateWindowSeconds)) : initialAntiRaidDraft.joinRateWindowSeconds,
+            minimumAccountAgeHours: typeof value.minimumAccountAgeHours === "number" ? Math.max(0, Math.min(8760, value.minimumAccountAgeHours)) : initialAntiRaidDraft.minimumAccountAgeHours,
+            verificationTimeoutMinutes: typeof value.verificationTimeoutMinutes === "number" ? Math.max(1, Math.min(60, value.verificationTimeoutMinutes)) : initialAntiRaidDraft.verificationTimeoutMinutes,
+            maxAttempts: typeof value.maxAttempts === "number" ? Math.max(1, Math.min(10, value.maxAttempts)) : initialAntiRaidDraft.maxAttempts,
+          });
+        }
+      } else {
+        setAntiRaid(initialAntiRaidDraft);
+      }
+    } catch {
+      setAntiRaid(initialAntiRaidDraft);
+    } finally {
+      setAntiRaidLoaded(true);
+    }
+  }, [guildId]);
+
+  useEffect(() => {
+    if (!guildId || !antiRaidLoaded) return;
+    try {
+      window.localStorage.setItem(`aishu:anti-raid-draft:${guildId}`, JSON.stringify(antiRaid));
+    } catch {
+      // Browser storage can be disabled or full; the in-memory draft still works.
+    }
+  }, [guildId, antiRaid, antiRaidLoaded]);
 
   return (
     <div>
@@ -130,11 +180,11 @@ export default function VerificationPage() {
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <ShieldAlert size={18} className="text-accent-bright" />
             <h2 className="font-display text-base font-semibold text-base-100">Advanced anti-raid policy</h2>
-            <Badge tone="warn">Dashboard draft</Badge>
+            <Badge tone="warn">{antiRaidLoaded ? "Browser draft" : "Loading draft"}</Badge>
           </div>
 
           <div className="rounded-card border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
-            These advanced controls are a dashboard-side policy draft only. They are not sent to the live bot yet, so changing them here does not activate anti-raid protections. We’ll connect persistence and enforcement during the separate bot phase, after the dashboard UI is complete.
+            These advanced controls are saved in this browser for the selected server only. They are not sent to the live bot yet, so changing them here does not activate anti-raid protections. Server-side persistence and enforcement require a separate bot-bridge change.
           </div>
 
           <Card title="Layered protection" description="Aishu’s proposed policy combines join-rate detection, a verification challenge, and temporary quarantine.">
