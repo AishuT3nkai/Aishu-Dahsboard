@@ -19,38 +19,62 @@ function SuggestionsList() {
   const [items, setItems] = useState<SuggestionEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    if (!guildId) return;
+  const load = useCallback(async () => {
+    if (!guildId) {
+      setItems(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    fetch(`/api/dashboard/suggestions?guildId=${guildId}`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) {
-          if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
-          return;
-        }
-        setItems(body.data);
-      })
-      .finally(() => setLoading(false));
+    setError(null);
+    try {
+      const res = await fetch(`/api/dashboard/suggestions?guildId=${encodeURIComponent(guildId)}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
+        throw new Error(body.error ?? "Failed to load suggestions.");
+      }
+      setBridgeUnconfigured(false);
+      setItems(Array.isArray(body.data) ? body.data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load suggestions.");
+    } finally {
+      setLoading(false);
+    }
   }, [guildId]);
 
   useEffect(load, [load]);
 
   async function decide(id: string, decision: "approved" | "denied") {
     if (!guildId) return;
-    await fetch(`/api/dashboard/suggestions/${id}/decide?guildId=${guildId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ decision }),
-    });
-    load();
+    setError(null);
+    try {
+      const res = await fetch(`/api/dashboard/suggestions/${encodeURIComponent(id)}/decide?guildId=${encodeURIComponent(guildId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? `Failed to ${decision} suggestion.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to ${decision} suggestion.`);
+    }
   }
 
   if (bridgeUnconfigured) return null;
 
   return (
     <Card title="Suggestion queue">
+      <div className="mb-3 flex justify-end">
+        <Button variant="secondary" onClick={() => void load()} disabled={loading}>
+          {loading ? "Refreshing…" : "Refresh"}
+        </Button>
+      </div>
+      {error && <div role="alert" className="mb-3 text-sm text-bad">{error}</div>}
+      {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to view suggestions.</p>}
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
       {items && items.length === 0 && <p className="text-sm text-base-500">No suggestions yet.</p>}
       {items && items.length > 0 && (
