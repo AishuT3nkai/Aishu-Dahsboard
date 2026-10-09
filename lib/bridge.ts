@@ -96,6 +96,11 @@ export const bridge = {
   setAutomodConfig: (guildId: string, data: unknown) =>
     bridgeFetch(`/api/guilds/${guildId}/automod`, { method: "PUT", json: data }),
 
+  // --- AutoMod ---
+  getAutomodConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/automod`),
+  setAutomodConfig: (guildId: string, data: unknown) =>
+    bridgeFetch(`/api/guilds/${guildId}/automod`, { method: "PUT", json: data }),
+
   // --- Moderation ---
   getModerationConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/moderation`),
   setModerationConfig: (guildId: string, data: unknown) =>
