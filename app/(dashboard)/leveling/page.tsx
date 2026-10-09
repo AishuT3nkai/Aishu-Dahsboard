@@ -256,7 +256,7 @@ function MembersPanel() {
                 <span className="text-base-400">Lvl {u.level}</span>
                 <TextInput
                   className="w-24"
-                  inputType="number"
+                  type="number"
                   min={0}
                   placeholder={String(u.xp)}
                   value={editing[u.userId] ?? ""}
