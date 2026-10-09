@@ -34,7 +34,7 @@ const NAV_SECTIONS: { label: string; items: { href: string; label: string; icon:
     label: "Server",
     items: [
       { href: "/server", label: "Server config", icon: Server },
-      { href: "/verification", label: "Verification", icon: ShieldCheck },
+      { href: "/verification", label: "Verification & Anti-Raid", icon: ShieldCheck },
       { href: "/moderation", label: "Moderation", icon: Gavel },
       { href: "/automod", label: "AutoMod", icon: ShieldAlert },
       { href: "/welcome", label: "Welcome & goodbye", icon: DoorOpen },
