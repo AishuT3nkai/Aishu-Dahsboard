@@ -39,7 +39,9 @@ function ReportsList() {
     }
   }, [guildId]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function close(id: string) {
     if (!guildId) return;
