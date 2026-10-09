@@ -10,9 +10,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   Ticket,
-  Users,
-  Lightbulb,
-  Flag,
   Settings2,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -36,6 +33,7 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!guildId) return;
@@ -61,7 +59,7 @@ export default function OverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [guildId]);
+  }, [guildId, retryCount]);
 
   return (
     <div className="space-y-6">
@@ -77,9 +75,9 @@ export default function OverviewPage() {
       {error && !bridgeUnconfigured && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-bad/30 bg-bad/10 px-4 py-3 text-sm text-bad">
           <span>{error}</span>
-          <Button variant="secondary" onClick={() => setLoading(true)} type="button" disabled={!guildId}
+          <Button variant="secondary" onClick={() => setRetryCount((count) => count + 1)} type="button" disabled={!guildId || loading}
             className="!px-3 !py-1.5" >
-            Reload page to retry
+            Try again
           </Button>
         </div>
       )}
