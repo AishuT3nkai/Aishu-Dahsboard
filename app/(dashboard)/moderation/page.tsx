@@ -15,30 +15,51 @@ function WarningsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
 
-  const load = useCallback(() => {
-    if (!guildId) return;
+  const load = useCallback(async () => {
+    if (!guildId) {
+      setWarnings(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    fetch(`/api/dashboard/moderation/warnings?guildId=${guildId}`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) {
-          if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
-          throw new Error(body.error ?? "Failed to load warnings.");
-        }
-        setWarnings(body.data);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load."))
-      .finally(() => setLoading(false));
+    setError(null);
+    setBridgeUnconfigured(false);
+
+    try {
+      const res = await fetch(`/api/dashboard/moderation/warnings?guildId=${encodeURIComponent(guildId)}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
+        throw new Error(body.error ?? "Failed to load warnings.");
+      }
+      setWarnings(Array.isArray(body.data) ? body.data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load warnings.");
+    } finally {
+      setLoading(false);
+    }
   }, [guildId]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function clear(warningId: string) {
     if (!guildId) return;
-    await fetch(`/api/dashboard/moderation/warnings?guildId=${guildId}&warningId=${warningId}`, {
-      method: "DELETE",
-    });
-    load();
+    setError(null);
+    try {
+      const params = new URLSearchParams({ guildId, warningId });
+      const res = await fetch(`/api/dashboard/moderation/warnings?${params.toString()}`, {
+        method: "DELETE",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? "Failed to clear warning.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear warning.");
+    }
   }
 
   if (bridgeUnconfigured) return null;
