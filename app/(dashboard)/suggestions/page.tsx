@@ -45,7 +45,9 @@ function SuggestionsList() {
     }
   }, [guildId]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function decide(id: string, decision: "approved" | "denied") {
     if (!guildId) return;
