@@ -66,8 +66,16 @@ function WarningsPanel() {
 
   return (
     <Card title="Warnings" description="Every warning issued via /warn across the server.">
+      <div className="mb-3 flex justify-end">
+        <Button variant="secondary" onClick={() => void load()} disabled={loading}>
+          {loading ? "Refreshing…" : "Refresh"}
+        </Button>
+      </div>
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
-      {error && <div className="text-sm text-bad">{error}</div>}
+      {!loading && !guildId && (
+        <p className="text-sm text-base-500">Select a Discord server to view its warnings.</p>
+      )}
+      {error && <div role="alert" className="text-sm text-bad">{error}</div>}
       {warnings && warnings.length === 0 && <p className="text-sm text-base-500">No warnings on record.</p>}
       {warnings && warnings.length > 0 && (
         <div className="space-y-2">
