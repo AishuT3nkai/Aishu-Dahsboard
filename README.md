@@ -15,7 +15,7 @@ The dashboard UI and its server-side API routes are implemented, but **the dashb
 
 | Area | Current status |
 |---|---|
-| Login and route protection | Discord OAuth, admin allowlist, signed HttpOnly session cookie, and default-protected routes are implemented. |
+| Login and route protection | Discord OAuth, admin allowlist, JWE-encrypted HttpOnly session cookie, and default-protected routes are implemented. |
 | Configuration pages | UI and validation/API adapters are present; live reads and writes require the bot bridge. |
 | Advanced anti-raid controls | Browser-only drafts per guild; not applied to the live bot. |
 | Webhooks | Draft-only preview. No endpoint URL is saved, and no delivery is sent. Do not paste production secrets here. |

@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtDecrypt } from "jose";
 
 const SESSION_COOKIE = "aishu_dashboard_session";
+
+async function getSessionKey(secret: string): Promise<Uint8Array> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(secret)
+  );
+  return new Uint8Array(digest);
+}
 
 // Only the sign-in entry point and OAuth handshake are public. Every other
 // route is protected by default, so adding a new dashboard page (for example
@@ -22,7 +30,7 @@ export async function middleware(req: NextRequest) {
   let valid = false;
   if (token && secret) {
     try {
-      await jwtVerify(token, new TextEncoder().encode(secret));
+      await jwtDecrypt(token, await getSessionKey(secret));
       valid = true;
     } catch {
       valid = false;
