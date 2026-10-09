@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   ShieldCheck,
+  Webhook,
   Gavel,
   ShieldAlert,
   DoorOpen,
@@ -35,6 +36,7 @@ const NAV_SECTIONS: { label: string; items: { href: string; label: string; icon:
     items: [
       { href: "/server", label: "Server config", icon: Server },
       { href: "/verification", label: "Verification & Anti-Raid", icon: ShieldCheck },
+      { href: "/webhooks", label: "Webhooks", icon: Webhook },
       { href: "/moderation", label: "Moderation", icon: Gavel },
       { href: "/automod", label: "AutoMod", icon: ShieldAlert },
       { href: "/welcome", label: "Welcome & goodbye", icon: DoorOpen },
