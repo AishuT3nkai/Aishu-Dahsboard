@@ -3,7 +3,7 @@
  * reads the bot's local SQLite file directly (Vercel and the bot process
  * don't even share a filesystem). Instead the Aishu Bot process, running
  * on Nexus Host, exposes a small authenticated HTTP API described in
- * dashboard/BRIDGE.md, and this file is the client for it.
+ * BRIDGE.md, and this file is the client for it.
  *
  * The bot-side HTTP API is implemented in AishuT3nkai/Aishu-Bot. Configure
  * BOT_API_BASE_URL and BOT_API_SHARED_SECRET in the dashboard deployment
@@ -14,7 +14,7 @@ export class BridgeNotConfiguredError extends Error {
   constructor() {
     super(
       "The bot bridge is not configured (BOT_API_BASE_URL / BOT_API_SHARED_SECRET). " +
-        "This dashboard control has no live bot to save to yet — see dashboard/BRIDGE.md."
+        "This dashboard control has no live bot to save to yet — see BRIDGE.md."
     );
     this.name = "BridgeNotConfiguredError";
   }

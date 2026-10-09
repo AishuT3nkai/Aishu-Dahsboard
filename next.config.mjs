@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // The dashboard is deployed with "Root Directory: dashboard" on Vercel,
-  // per the bot repo README. Keep output as the default Node server (not
-  // "export") because API routes need a server runtime for OAuth + the bot bridge.
+  // This repository is standalone: package.json and app/ are at its root.
+  // Keep the default Node server output because OAuth and bridge API routes
+  // require a server runtime (a static export would not work).
   eslint: {
     ignoreDuringBuilds: false,
   },

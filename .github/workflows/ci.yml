@@ -22,6 +22,8 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: ESLint
+        run: npm run lint
       - name: TypeScript check
         run: npm run typecheck
       - name: Production build
