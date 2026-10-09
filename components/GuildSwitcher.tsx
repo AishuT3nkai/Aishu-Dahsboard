@@ -28,8 +28,14 @@ export function GuildSwitcher() {
 
   if (guilds.length === 0) {
     return (
-      <div className="rounded-card border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
-        No servers found where you and Aishu Bot are both present and manageable.
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="rounded-card border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+          No servers found where you and Aishu Bot are both present and manageable.
+        </div>
+        <button type="button" onClick={reload} className="focus-ring inline-flex items-center gap-1.5 rounded-card border border-base-700 px-3 py-2 text-xs text-base-200 hover:bg-base-800">
+          <RefreshCw size={13} />
+          Refresh
+        </button>
       </div>
     );
   }
