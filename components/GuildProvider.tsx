@@ -9,10 +9,10 @@ interface GuildContextValue {
   setGuildId: (id: string) => void;
   loading: boolean;
   error: string | null;
+  reload: () => void;
 }
 
 const GuildContext = createContext<GuildContextValue | null>(null);
-
 const STORAGE_KEY = "aishu_selected_guild";
 
 export function GuildProvider({ children }: { children: React.ReactNode }) {
@@ -20,40 +20,56 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
   const [guildId, setGuildIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     (async () => {
       try {
         const res = await fetch("/api/guild");
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Failed to load guilds.");
-        }
-        const body = (await res.json()) as { guilds: DiscordGuildSummary[] };
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error ?? "Failed to load Discord servers.");
+
+        const nextGuilds = (body.guilds ?? []) as DiscordGuildSummary[];
         if (cancelled) return;
-        setGuilds(body.guilds);
-        const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-        const valid = body.guilds.find((g) => g.id === stored);
-        setGuildIdState(valid ? valid.id : body.guilds[0]?.id ?? null);
+        setGuilds(nextGuilds);
+
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        const selectedStillAvailable = nextGuilds.find((guild) => guild.id === stored);
+        const currentStillAvailable = nextGuilds.find((guild) => guild.id === guildId);
+        const nextSelected = selectedStillAvailable?.id ?? currentStillAvailable?.id ?? nextGuilds[0]?.id ?? null;
+        setGuildIdState(nextSelected);
+
+        if (nextSelected) window.localStorage.setItem(STORAGE_KEY, nextSelected);
+        else window.localStorage.removeItem(STORAGE_KEY);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load guilds.");
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load Discord servers.");
+          setGuilds([]);
+          setGuildIdState(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadTick]);
 
   const setGuildId = useCallback((id: string) => {
     setGuildIdState(id);
-    if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, id);
+    window.localStorage.setItem(STORAGE_KEY, id);
   }, []);
 
+  const reload = useCallback(() => setReloadTick((tick) => tick + 1), []);
+
   return (
-    <GuildContext.Provider value={{ guilds, guildId, setGuildId, loading, error }}>
+    <GuildContext.Provider value={{ guilds, guildId, setGuildId, loading, error, reload }}>
       {children}
     </GuildContext.Provider>
   );
