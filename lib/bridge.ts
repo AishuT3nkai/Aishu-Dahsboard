@@ -5,10 +5,9 @@
  * on Nexus Host, exposes a small authenticated HTTP API described in
  * dashboard/BRIDGE.md, and this file is the client for it.
  *
- * That bot-side HTTP API does not exist yet in AishuT3nkai/Aishu-Bot as of
- * this build. Until BOT_API_BASE_URL / BOT_API_SHARED_SECRET are set and
- * the bot exposes those routes, every call here fails loudly with
- * BridgeNotConfiguredError rather than returning fake "saved" data.
+ * The bot-side HTTP API is implemented in AishuT3nkai/Aishu-Bot. Configure
+ * BOT_API_BASE_URL and BOT_API_SHARED_SECRET in the dashboard deployment
+ * to enable live reads and writes. Calls fail loudly when not configured.
  */
 
 export class BridgeNotConfiguredError extends Error {
@@ -90,11 +89,6 @@ export const bridge = {
   getWelcomeGoodbye: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/welcome`),
   setWelcomeGoodbye: (guildId: string, data: unknown) =>
     bridgeFetch(`/api/guilds/${guildId}/welcome`, { method: "PUT", json: data }),
-
-  // --- AutoMod ---
-  getAutomodConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/automod`),
-  setAutomodConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/automod`, { method: "PUT", json: data }),
 
   // --- AutoMod ---
   getAutomodConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/automod`),
