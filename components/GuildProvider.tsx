@@ -33,18 +33,41 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.error ?? "Failed to load Discord servers.");
 
-        const nextGuilds = (body.guilds ?? []) as DiscordGuildSummary[];
+        const nextGuilds: DiscordGuildSummary[] = Array.isArray(body.guilds)
+          ? body.guilds.filter(
+              (guild: unknown): guild is DiscordGuildSummary =>
+                typeof guild === "object" &&
+                guild !== null &&
+                "id" in guild &&
+                typeof guild.id === "string" &&
+                "name" in guild &&
+                typeof guild.name === "string"
+            ).map((guild) => ({
+              id: guild.id,
+              name: guild.name,
+              icon: typeof guild.icon === "string" ? guild.icon : null,
+            }))
+          : [];
         if (cancelled) return;
         setGuilds(nextGuilds);
 
-        const stored = window.localStorage.getItem(STORAGE_KEY);
+        let stored: string | null = null;
+        try {
+          stored = window.localStorage.getItem(STORAGE_KEY);
+        } catch {
+          // Continue with the first available guild when storage is unavailable.
+        }
         const selectedStillAvailable = nextGuilds.find((guild) => guild.id === stored);
         const currentStillAvailable = nextGuilds.find((guild) => guild.id === guildId);
         const nextSelected = selectedStillAvailable?.id ?? currentStillAvailable?.id ?? nextGuilds[0]?.id ?? null;
         setGuildIdState(nextSelected);
 
-        if (nextSelected) window.localStorage.setItem(STORAGE_KEY, nextSelected);
-        else window.localStorage.removeItem(STORAGE_KEY);
+        try {
+          if (nextSelected) window.localStorage.setItem(STORAGE_KEY, nextSelected);
+          else window.localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // Guild selection remains available for the current session.
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load Discord servers.");
@@ -63,7 +86,11 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
 
   const setGuildId = useCallback((id: string) => {
     setGuildIdState(id);
-    window.localStorage.setItem(STORAGE_KEY, id);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, id);
+    } catch {
+      // The selected guild still works for this session when storage is unavailable.
+    }
   }, []);
 
   const reload = useCallback(() => setReloadTick((tick) => tick + 1), []);
