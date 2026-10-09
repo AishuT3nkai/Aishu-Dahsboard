@@ -52,15 +52,14 @@ export default function VerificationPage() {
     useConfig<VerificationConfig>("/api/dashboard/verification");
   const { guildId } = useGuild();
   const [antiRaid, setAntiRaid] = useState<AntiRaidDraft>(initialAntiRaidDraft);
-  const [antiRaidLoaded, setAntiRaidLoaded] = useState(false);
+  const [antiRaidLoadedGuildId, setAntiRaidLoadedGuildId] = useState<string | null>(null);
 
   // These advanced controls are dashboard-only until the bot bridge supports them.
   // Keep the draft per guild in this browser so a refresh does not silently discard it.
   useEffect(() => {
-    setAntiRaidLoaded(false);
+    setAntiRaidLoadedGuildId(null);
     if (!guildId) {
       setAntiRaid(initialAntiRaidDraft);
-      setAntiRaidLoaded(true);
       return;
     }
 
@@ -88,18 +87,18 @@ export default function VerificationPage() {
     } catch {
       setAntiRaid(initialAntiRaidDraft);
     } finally {
-      setAntiRaidLoaded(true);
+      setAntiRaidLoadedGuildId(guildId);
     }
   }, [guildId]);
 
   useEffect(() => {
-    if (!guildId || !antiRaidLoaded) return;
+    if (!guildId || antiRaidLoadedGuildId !== guildId) return;
     try {
       window.localStorage.setItem(`aishu:anti-raid-draft:${guildId}`, JSON.stringify(antiRaid));
     } catch {
       // Browser storage can be disabled or full; the in-memory draft still works.
     }
-  }, [guildId, antiRaid, antiRaidLoaded]);
+  }, [guildId, antiRaid, antiRaidLoadedGuildId]);
 
   return (
     <div>
@@ -180,7 +179,7 @@ export default function VerificationPage() {
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <ShieldAlert size={18} className="text-accent-bright" />
             <h2 className="font-display text-base font-semibold text-base-100">Advanced anti-raid policy</h2>
-            <Badge tone="warn">{antiRaidLoaded ? "Browser draft" : "Loading draft"}</Badge>
+            <Badge tone="warn">{antiRaidLoadedGuildId === guildId ? "Browser draft" : "Loading draft"}</Badge>
           </div>
 
           <div className="rounded-card border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
