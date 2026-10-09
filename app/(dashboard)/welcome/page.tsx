@@ -22,7 +22,7 @@ export default function WelcomePage() {
     <div>
       <PageHeader
         title="Welcome & goodbye"
-        description="Controls member-join and member-leave messages, plus autorole. No /welcome setup or /goodbye setup commands exist — this is dashboard-only."
+        description="Configure welcome and goodbye messages here or with the bot’s /welcome and /goodbye commands. Auto role has its own page."
       />
       <SaveBar
         dirty={dirty}
