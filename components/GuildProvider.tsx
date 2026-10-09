@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import type { DiscordGuildSummary } from "@/lib/types";
 
 interface GuildContextValue {
@@ -21,6 +21,11 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const guildIdRef = useRef<string | null>(guildId);
+
+  useEffect(() => {
+    guildIdRef.current = guildId;
+  }, [guildId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +62,7 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
           // Continue with the first available guild when storage is unavailable.
         }
         const selectedStillAvailable = nextGuilds.find((guild) => guild.id === stored);
-        const currentStillAvailable = nextGuilds.find((guild) => guild.id === guildId);
+        const currentStillAvailable = nextGuilds.find((guild) => guild.id === guildIdRef.current);
         const nextSelected = selectedStillAvailable?.id ?? currentStillAvailable?.id ?? nextGuilds[0]?.id ?? null;
         setGuildIdState(nextSelected);
 
