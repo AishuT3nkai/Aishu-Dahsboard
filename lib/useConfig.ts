@@ -46,8 +46,8 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
     setBridgeUnconfigured(false);
     (async () => {
       try {
-        const res = await fetch(`${endpoint}?guildId=${guildId}`);
-        const body = await res.json();
+        const res = await fetch(`${endpoint}?guildId=${encodeURIComponent(guildId)}`);
+        const body = await res.json().catch(() => ({}));
         if (!res.ok) {
           if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
           throw new Error(body.error ?? "Failed to load.");
@@ -71,7 +71,7 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`${endpoint}?guildId=${guildId}`, {
+      const res = await fetch(`${endpoint}?guildId=${encodeURIComponent(guildId)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
