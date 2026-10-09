@@ -39,6 +39,7 @@ last line of defense and should not trust the path blindly either.
 | GET / PUT | `/api/guilds/:id/verification` | `VerificationConfig` |
 | GET / PUT | `/api/guilds/:id/welcome` | `WelcomeGoodbyeConfig` |
 | GET / PUT | `/api/guilds/:id/moderation` | `ModerationConfig` |
+| GET / PUT | `/api/guilds/:id/automod` | AutoMod config (see `dashboard/lib/types.ts`) |
 | GET | `/api/guilds/:id/moderation/warnings` | `WarningEntry[]` |
 | DELETE | `/api/guilds/:id/moderation/warnings/:warningId` | Clear one warning |
 | GET / PUT | `/api/guilds/:id/tickets` | `TicketConfig` |
