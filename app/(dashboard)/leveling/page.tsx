@@ -12,44 +12,77 @@ function RewardsPanel() {
   const { guildId } = useGuild();
   const [rewards, setRewards] = useState<LevelRewardEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
 
-  const load = useCallback(() => {
-    if (!guildId) return;
+  const load = useCallback(async () => {
+    if (!guildId) {
+      setRewards(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    fetch(`/api/dashboard/leveling/rewards?guildId=${guildId}`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) {
-          if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
-          return;
-        }
-        setRewards(body.data);
-      })
-      .finally(() => setLoading(false));
+    setError(null);
+    try {
+      const res = await fetch(`/api/dashboard/leveling/rewards?guildId=${encodeURIComponent(guildId)}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
+        throw new Error(body.error ?? "Failed to load level rewards.");
+      }
+      setBridgeUnconfigured(false);
+      setRewards(Array.isArray(body.data) ? body.data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load level rewards.");
+    } finally {
+      setLoading(false);
+    }
   }, [guildId]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function save(next: LevelRewardEntry[]) {
-    if (!guildId) return;
-    setRewards(next);
-    await fetch(`/api/dashboard/leveling/rewards?guildId=${guildId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
+    if (!guildId || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/dashboard/leveling/rewards?guildId=${encodeURIComponent(guildId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
+        throw new Error(body.error ?? "Failed to save level rewards.");
+      }
+      setRewards(Array.isArray(body.data) ? body.data : next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save level rewards.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (bridgeUnconfigured) return null;
 
   return (
     <Card title="Level rewards" description="Roles granted automatically when a member reaches a level.">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        {error && <p role="alert" className="text-sm text-bad">{error}</p>}
+        <Button variant="secondary" onClick={() => void load()} disabled={loading || saving}>
+          {loading ? "Refreshing…" : "Refresh"}
+        </Button>
+      </div>
+      {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to manage rewards.</p>}
       {loading && <div className="h-20 animate-pulse rounded-card bg-base-800" />}
       {rewards && (
         <div className="space-y-2">
           {rewards.map((r, i) => (
-            <div key={r.id} className="flex items-center gap-2">
+            <div key={r.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <NumberInput
                 className="w-24"
                 value={r.level}
@@ -70,22 +103,23 @@ function RewardsPanel() {
                   setRewards(next);
                 }}
               />
-              <Button variant="danger" onClick={() => save(rewards.filter((x) => x.id !== r.id))}>
+              <Button variant="danger" disabled={saving} onClick={() => void save(rewards.filter((x) => x.id !== r.id))}>
                 Remove
               </Button>
             </div>
           ))}
-          <div className="flex justify-between pt-1">
+          <div className="flex flex-wrap justify-between gap-2 pt-1">
             <Button
               variant="secondary"
+              disabled={saving}
               onClick={() =>
-                save([...(rewards ?? []), { id: crypto.randomUUID(), level: 1, roleId: "" }])
+                setRewards([...(rewards ?? []), { id: crypto.randomUUID(), level: 1, roleId: "" }])
               }
             >
               Add reward
             </Button>
-            <Button variant="primary" onClick={() => save(rewards)}>
-              Save rewards
+            <Button variant="primary" disabled={saving || !rewards} onClick={() => rewards && void save(rewards)}>
+              {saving ? "Saving…" : "Save rewards"}
             </Button>
           </div>
         </div>
