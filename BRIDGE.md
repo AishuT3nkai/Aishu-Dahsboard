@@ -17,7 +17,7 @@ As of October 2026, this bridge has **not yet been implemented in `AishuT3nkai/A
 
 Every guild-specific route is namespaced by `:guildId`. The bridge must independently verify that the bot is currently in that guild and reject unknown guild IDs. The dashboard also intersects the signed-in admin's manageable guilds with the bot's guilds; the bridge is the final line of defense and must not trust a path parameter.
 
-## Endpoints expected by `lib/bridge.ts`
+## Existing endpoints expected by `lib/bridge.ts`
 
 All paths are relative to `BOT_API_BASE_URL`.
 
@@ -50,12 +50,46 @@ All paths are relative to `BOT_API_BASE_URL`.
 
 The canonical response shapes live in `lib/types.ts`. PUT bodies are validated with Zod by the dashboard, but the bridge must validate independently. Use the existing bot's database patterns and migrations; do not create parallel data that the bot never reads.
 
-## Known gaps that require bot-side work
+## Additional bridge contract needed to finish dashboard features
+
+These are **requirements to implement before the matching dashboard controls can be called live**. They are not currently implemented by this dashboard repo or the bot.
+
+### Channel and role lookup
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/guilds/:id/channels` | Return selectable text/announcement channels with `id`, `name`, and `type`; omit channels the bot cannot use |
+| GET | `/api/guilds/:id/roles` | Return selectable roles with `id`, `name`, `position`, and `managed`; exclude @everyone and integration-managed roles from assignment |
+
+The bridge must check guild membership and permissions and must never let a submitted channel/role ID bypass those checks.
+
+### Advanced anti-raid
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET / PUT | `/api/guilds/:id/anti-raid` | Read/write a validated per-guild policy: enabled, captcha, quarantine, account-age gate, join-rate threshold/window, minimum account age, verification timeout, and attempt limit |
+
+The bot must enforce this policy in actual join/verification events. Persisting the values alone is not enforcement. Until that work exists, the UI must label these values as local drafts and must not suggest that protection is active.
+
+### Webhook management
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/guilds/:id/webhooks` | Return configured webhook metadata and subscribed event names; never return stored endpoint secrets |
+| POST | `/api/guilds/:id/webhooks` | Validate an HTTPS endpoint and event allowlist, then store the secret securely server-side |
+| PATCH | `/api/guilds/:id/webhooks/:webhookId` | Update endpoint/events or enable state after ownership checks |
+| DELETE | `/api/guilds/:id/webhooks/:webhookId` | Disable and remove a webhook configuration |
+| POST | `/api/guilds/:id/webhooks/:webhookId/test` | Send an explicitly requested test event and return a redacted delivery result |
+| GET | `/api/guilds/:id/webhooks/:webhookId/deliveries` | Return redacted delivery status, attempt count, and timestamps; never include endpoint secrets or full sensitive payloads |
+
+Webhook delivery must use signed payloads, bounded timeouts, retries with backoff, SSRF protection (including blocking private/link-local/reserved IP ranges and re-validating redirects/DNS), secret encryption at rest, rate limits, and redacted logs. Never let a webhook endpoint target internal metadata services or arbitrary private network hosts.
+
+## Known integration gaps
 
 - **The bridge itself is absent.** Every live read/write in the dashboard depends on the endpoints above.
 - **Leveling persistence and runtime behavior** require bot-side tables, XP update logic, rewards, and any intended rank/leaderboard commands.
 - **Per-guild configuration persistence** is required for verification, welcome/goodbye, moderation, tickets, suggestions, reports, birthday, autorole, AutoMod, and server settings.
-- **Channel and role lookup endpoints are not specified yet.** Until they are added, the dashboard uses manual Discord ID fields instead of pretending it can list channels/roles.
-- **Webhook management is not part of the current bridge contract.** The dashboard page remains draft-only: it does not persist endpoint URLs or send event deliveries. Implement encrypted/server-side secret storage, event subscriptions, signing, delivery retry/backoff, and redacted operational logs before enabling this feature.
-- **Advanced anti-raid settings are browser-only drafts** at present. They are not applied to the bot.
+- **Channel and role lookup endpoints** must be added before replacing manual-ID fields with selectors.
+- **Webhook management** remains draft-only until secure storage, event subscriptions, signing, delivery retry/backoff, SSRF protection, and redacted operational logs are implemented.
+- **Advanced anti-raid settings** are browser-only drafts until bridge-backed persistence and bot enforcement exist.
 - Dashboard equivalents should only replace or disable existing Discord setup/panel commands after the corresponding bridge-backed feature has been verified end to end.
