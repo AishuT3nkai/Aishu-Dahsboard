@@ -30,10 +30,26 @@ export class BridgeRequestError extends Error {
 }
 
 function config() {
-  const baseUrl = process.env.BOT_API_BASE_URL;
+  const rawBaseUrl = process.env.BOT_API_BASE_URL;
   const secret = process.env.BOT_API_SHARED_SECRET;
-  if (!baseUrl || !secret) return null;
-  return { baseUrl: baseUrl.replace(/\/$/, ""), secret };
+  if (!rawBaseUrl || !secret) return null;
+
+  // Never send the shared bridge secret over plain HTTP. Permit HTTP only for
+  // loopback development endpoints; deployed bridge URLs must use HTTPS.
+  try {
+    const parsed = new URL(rawBaseUrl);
+    const isLoopback =
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "[::1]";
+    if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && isLoopback)) {
+      return null;
+    }
+    if (parsed.username || parsed.password || parsed.search || parsed.hash) return null;
+    return { baseUrl: parsed.toString().replace(/\/$/, ""), secret };
+  } catch {
+    return null;
+  }
 }
 
 export function isBridgeConfigured(): boolean {
