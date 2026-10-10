@@ -67,8 +67,6 @@ function RewardsPanel() {
     }
   }
 
-  if (bridgeUnconfigured) return null;
-
   return (
     <Card title="Level rewards" description="Roles granted automatically when a member reaches a level.">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
