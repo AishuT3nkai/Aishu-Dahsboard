@@ -222,8 +222,6 @@ function MembersPanel() {
     }
   }
 
-  if (bridgeUnconfigured) return null;
-
   return (
     <Card title="Member XP" description="Per-guild — XP never carries over between servers.">
       <div className="mb-3 flex flex-wrap items-center gap-2">
