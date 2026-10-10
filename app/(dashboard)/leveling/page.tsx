@@ -257,6 +257,7 @@ function MembersPanel() {
                 <TextInput
                   className="w-24"
                   type="number"
+                  aria-label={`XP for ${u.username}`}
                   min={0}
                   placeholder={String(u.xp)}
                   value={editing[u.userId] ?? ""}
