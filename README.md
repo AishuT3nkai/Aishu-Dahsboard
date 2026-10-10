@@ -23,6 +23,39 @@ A private, two-admin-only dashboard for Aishu Bot. This is a **standalone Next.j
 | Channel/role selection | Manual Discord IDs | Authenticated bridge lookups |
 | Build/deployment | Must be checked against the latest commit's actual CI/Vercel status; a prior success is not proof that the current commit succeeds | CI and Vercel |
 
+## Dashboard completion checklist (code-only scope)
+
+This checklist separates work already present in this repository from work that is not implemented or cannot be completed without the bot bridge. A checkbox means the code exists in this repository; it does **not** mean the feature has passed end-to-end testing.
+
+### Present in the dashboard repository
+- [x] Discord OAuth sign-in and two-account allowlist.
+- [x] Encrypted HttpOnly session cookie and protected dashboard routes.
+- [x] Shared guild context and server-side guild scoping checks.
+- [x] Dashboard shell, sidebar, and feature-page routes.
+- [x] Shared configuration form/save patterns and server-side API route adapters.
+- [x] Zod validation for supported dashboard API payloads.
+- [x] Leveling configuration, reward editor, and member XP management UI/API adapters.
+- [x] Webhook draft page with sample payload preview and explicit disconnected-state warning.
+- [x] Documentation of the expected bot bridge API contract.
+
+### Still required in dashboard code
+- [ ] Audit every page and API route for consistent loading, empty, error, retry, and save feedback.
+- [ ] Complete a route-by-route validation/security review, including malformed guild IDs, request bodies, and authorization assumptions.
+- [ ] Add accessible labels, keyboard/focus behavior, and responsive layout checks to all form controls.
+- [ ] Finish channel/role selector UI only after authenticated lookup endpoints exist; until then keep manual IDs clearly labeled.
+- [ ] Improve webhook draft UX without implying that a destination or event subscription is saved or active.
+- [ ] Review dependencies and resolve applicable security advisories without introducing unreviewed breaking upgrades.
+- [ ] Update this checklist after each real code change; do not mark end-to-end behavior complete from a successful build alone.
+
+### Blocked on bot bridge/runtime work (not dashboard-only)
+- [ ] Implement the private authenticated bridge documented in `BRIDGE.md`.
+- [ ] Implement and verify real per-guild persistence for configuration features.
+- [ ] Implement bot-side leveling XP runtime, reward assignment, and ranking data.
+- [ ] Add channel and role lookup endpoints with guild/permission checks.
+- [ ] Move advanced anti-raid drafts to bridge-backed storage and enforce the policy in bot join/verification events.
+- [ ] Implement secure webhook storage, SSRF defenses, HMAC signing, delivery/retries, and redacted delivery logs.
+- [ ] Run end-to-end checks against the real bridge and bot after the dashboard code is ready.
+
 ## Required environment variables
 
 Copy `.env.example` to `.env.local` and fill in the values locally. Configure matching values in Vercel for the environments that will be used.
