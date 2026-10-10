@@ -62,8 +62,6 @@ function WarningsPanel() {
     }
   }
 
-  if (bridgeUnconfigured) return null;
-
   return (
     <Card title="Warnings" description="Every warning issued via /warn across the server.">
       <div className="mb-3 flex justify-end">
