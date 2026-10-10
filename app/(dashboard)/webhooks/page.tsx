@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ExternalLink, Webhook, ShieldCheck, Copy, BellRing, CircleAlert, Check } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge, Button, Card, FieldGroup, TextArea, TextInput } from "@/components/ui";
@@ -45,6 +45,24 @@ export default function WebhooksPage() {
   const [selectedEvents, setSelectedEvents] = useState<string[]>(["member.verified", "raid.detected"]);
   const [copied, setCopied] = useState(false);
   const examplePayload = examplePayloadFor(selectedEvents[0] ?? "member.verified");
+  const endpointValidation = useMemo(() => {
+    if (!endpoint.trim()) return { valid: false, message: "Enter an HTTPS URL to preview its format." };
+    try {
+      const parsed = new URL(endpoint.trim());
+      if (parsed.protocol !== "https:") {
+        return { valid: false, message: "Use HTTPS. HTTP endpoints are not accepted by the planned integration." };
+      }
+      if (parsed.username || parsed.password) {
+        return { valid: false, message: "Do not put credentials in the URL." };
+      }
+      if (!parsed.hostname || !parsed.hostname.includes(".")) {
+        return { valid: false, message: "Enter a fully qualified hostname." };
+      }
+      return { valid: true, message: "URL format looks valid. This is only a browser-side check; nothing is saved or sent." };
+    } catch {
+      return { valid: false, message: "Enter a valid HTTPS URL." };
+    }
+  }, [endpoint]);
 
   const toggleEvent = (id: string) => {
     setSelectedEvents((current) =>
@@ -105,7 +123,11 @@ export default function WebhooksPage() {
               placeholder="https://example.com/webhooks/aishu"
               autoComplete="off"
               spellCheck={false}
+              aria-invalid={endpoint.length > 0 && !endpointValidation.valid}
             />
+            <p className={`mt-2 text-xs ${endpointValidation.valid ? "text-good" : "text-base-500"}`} role="status">
+              {endpointValidation.message}
+            </p>
           </FieldGroup>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Badge tone="warn">Not connected</Badge>
