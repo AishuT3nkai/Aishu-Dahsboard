@@ -65,9 +65,16 @@ export default function WebhooksPage() {
   }, [endpoint]);
 
   const toggleEvent = (id: string) => {
+    setCopied(false);
     setSelectedEvents((current) =>
       current.includes(id) ? current.filter((event) => event !== id) : [...current, id]
     );
+  };
+
+  const clearDraft = () => {
+    setEndpoint("");
+    setSelectedEvents([]);
+    setCopied(false);
   };
 
   async function copyPayload() {
@@ -129,9 +136,12 @@ export default function WebhooksPage() {
               {endpointValidation.message}
             </p>
           </FieldGroup>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Badge tone="warn">Not connected</Badge>
-            <span className="text-xs text-base-500">No test request will be sent from this browser.</span>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="warn">Not connected</Badge>
+              <span className="text-xs text-base-500">No test request will be sent from this browser.</span>
+            </div>
+            <Button variant="secondary" onClick={clearDraft}>Clear draft</Button>
           </div>
         </Card>
 
@@ -153,7 +163,10 @@ export default function WebhooksPage() {
               </label>
             ))}
           </div>
-          <p className="mt-3 text-xs text-base-500">{selectedEvents.length} event type{selectedEvents.length === 1 ? "" : "s"} selected.</p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-base-500" role="status">{selectedEvents.length} event type{selectedEvents.length === 1 ? "" : "s"} selected.</p>
+            {selectedEvents.length === 0 && <p className="text-xs text-warn">Select an event to preview its sample payload.</p>}
+          </div>
         </Card>
 
         <Card title="Payload preview" description="Example event body to help you build a compatible template. The values below are fictional sample data.">
