@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtDecrypt } from "jose";
 
 const SESSION_COOKIE = "aishu_dashboard_session";
 
@@ -13,9 +13,14 @@ export async function middleware(req: NextRequest) {
   const secret = process.env.DASHBOARD_SESSION_SECRET;
 
   let valid = false;
-  if (token && secret) {
+  if (token && secret && secret.length >= 16) {
     try {
-      await jwtVerify(token, new TextEncoder().encode(secret));
+      // Match lib/session.ts: sessions are encrypted JWE tokens using a
+      // SHA-256-derived A256GCM key, not signed JWS tokens.
+      const key = new Uint8Array(
+        await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret))
+      );
+      await jwtDecrypt(token, key);
       valid = true;
     } catch {
       valid = false;
