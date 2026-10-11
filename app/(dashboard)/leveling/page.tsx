@@ -110,6 +110,7 @@ function RewardsPanel() {
                 className="flex-1"
                 value={r.roleId}
                 placeholder="Role ID"
+                aria-label={`Discord role ID for reward ${i + 1}`}
                 onChange={(e) => {
                   const next = [...rewards];
                   next[i] = { ...r, roleId: e.target.value };
