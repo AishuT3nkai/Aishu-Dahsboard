@@ -59,20 +59,23 @@ function ReportsList() {
     }
   }
 
-  if (bridgeUnconfigured) return null;
-
   return (
     <Card title="Reports" description="Private reports submitted with /report.">
       <div className="mb-3 flex justify-end">
-        <Button variant="secondary" onClick={() => void load()} disabled={loading}>
+        <Button variant="secondary" onClick={() => void load()} disabled={loading || !guildId}>
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
       {error && <div role="alert" className="mb-3 text-sm text-bad">{error}</div>}
+      {bridgeUnconfigured && (
+        <p className="mb-3 text-sm text-base-400">
+          The bot bridge is not configured, so live reports cannot be loaded yet. Configure the bridge before using this panel.
+        </p>
+      )}
       {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to view reports.</p>}
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
-      {items && items.length === 0 && <p className="text-sm text-base-500">No reports yet.</p>}
-      {items && items.length > 0 && (
+      {!loading && guildId && !bridgeUnconfigured && !error && items && items.length === 0 && <p className="text-sm text-base-500">No reports yet.</p>}
+      {!loading && guildId && !bridgeUnconfigured && items && items.length > 0 && (
         <div className="space-y-2">
           {items.map((r) => (
             <div key={r.id} className="rounded-card border border-base-800 bg-base-950 p-3">
