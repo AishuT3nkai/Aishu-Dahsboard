@@ -35,7 +35,7 @@ This checklist separates work already present in this repository from work that 
 - [x] Shared configuration form/save patterns and server-side API route adapters.
 - [x] Zod validation for supported dashboard API payloads.
 - [x] Leveling configuration, reward editor, and member XP management UI/API adapters.
-- [x] Webhook draft page with sample payload preview and explicit disconnected-state warning.
+- [x] Webhook management UI and authenticated dashboard API adapters on the feature branch; live delivery still requires the bot bridge, host configuration, and end-to-end verification.
 - [x] Documentation of the expected bot bridge API contract.
 
 ### Still required in dashboard code
@@ -43,7 +43,7 @@ This checklist separates work already present in this repository from work that 
 - [ ] Complete a route-by-route validation/security review, including malformed guild IDs, request bodies, and authorization assumptions.
 - [ ] Add accessible labels, keyboard/focus behavior, and responsive layout checks to all form controls.
 - [ ] Finish channel/role selector UI only after authenticated lookup endpoints exist; until then keep manual IDs clearly labeled.
-- [ ] Improve webhook draft UX without implying that a destination or event subscription is saved or active.
+- [ ] Verify webhook management end to end against the deployed bot bridge; keep the UI explicit about disconnected or failed delivery states.
 - [ ] Review dependencies and resolve applicable security advisories without introducing unreviewed breaking upgrades.
 - [ ] Update this checklist after each real code change; do not mark end-to-end behavior complete from a successful build alone.
 

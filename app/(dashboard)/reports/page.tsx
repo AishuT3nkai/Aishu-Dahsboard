@@ -14,6 +14,7 @@ function ReportsList() {
   const [loading, setLoading] = useState(true);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!guildId) {
@@ -50,6 +51,7 @@ function ReportsList() {
   async function close(id: string) {
     if (!guildId) return;
     setError(null);
+    setActionPending(id);
     try {
       const res = await fetch(`/api/dashboard/reports/${encodeURIComponent(id)}/close?guildId=${encodeURIComponent(guildId)}`, { method: "POST" });
       const body = await res.json().catch(() => ({}));
@@ -57,6 +59,8 @@ function ReportsList() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to close report.");
+    } finally {
+      setActionPending(null);
     }
   }
 
@@ -87,7 +91,7 @@ function ReportsList() {
               <p className="text-sm text-base-300">{r.content}</p>
               {r.status === "open" && (
                 <div className="mt-3">
-                  <Button variant="secondary" onClick={() => close(r.id)}>
+                  <Button variant="secondary" disabled={actionPending !== null} onClick={() => close(r.id)}>
                     Mark closed
                   </Button>
                 </div>

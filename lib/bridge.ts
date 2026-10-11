@@ -64,20 +64,26 @@ async function bridgeFetch<T>(
   if (!cfg) throw new BridgeNotConfiguredError();
 
   const { json, ...rest } = init ?? {};
-  const res = await fetch(`${cfg.baseUrl}${path}`, {
-    ...rest,
-    method: rest.method ?? (json ? "POST" : "GET"),
-    headers: {
-      Authorization: `Bearer ${cfg.secret}`,
-      "Content-Type": "application/json",
-      ...rest.headers,
-    },
-    body: json !== undefined ? JSON.stringify(json) : rest.body,
-    cache: "no-store",
-    // The bot bridge should be a private, non-public endpoint reachable
-    // from Vercel; a short timeout keeps a down bot from hanging requests.
-    signal: AbortSignal.timeout(8000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.baseUrl}${path}`, {
+      ...rest,
+      method: rest.method ?? (json !== undefined ? "POST" : "GET"),
+      headers: {
+        Authorization: `Bearer ${cfg.secret}`,
+        "Content-Type": "application/json",
+        ...rest.headers,
+      },
+      body: json !== undefined ? JSON.stringify(json) : rest.body,
+      cache: "no-store",
+      // The bot bridge should be a private, non-public endpoint reachable
+      // from Vercel; a short timeout keeps a down bot from hanging requests.
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    // Do not leak internal hostnames or low-level network error details.
+    throw new BridgeRequestError(502, "The bot bridge is unreachable or timed out. Check the bridge service.");
+  }
 
   if (!res.ok) {
     // Never forward upstream response bodies; they may contain private details.
@@ -98,95 +104,112 @@ export const bridge = {
 
   // --- Overview ---
   getOverview: (guildId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/overview`),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/overview`),
 
   // --- Verification ---
-  getVerification: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/verification`),
+  getVerification: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/verification`),
   setVerification: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/verification`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/verification`, { method: "PUT", json: data }),
 
   // --- Welcome / Goodbye / Autorole ---
-  getWelcomeGoodbye: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/welcome`),
+  getWelcomeGoodbye: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/welcome`),
   setWelcomeGoodbye: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/welcome`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/welcome`, { method: "PUT", json: data }),
 
   // --- AutoMod ---
-  getAutomodConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/automod`),
+  getAutomodConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/automod`),
   setAutomodConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/automod`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/automod`, { method: "PUT", json: data }),
 
   // --- Moderation ---
-  getModerationConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/moderation`),
+  getModerationConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/moderation`),
   setModerationConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/moderation`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/moderation`, { method: "PUT", json: data }),
   listWarnings: (guildId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/moderation/warnings`),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/moderation/warnings`),
   clearWarning: (guildId: string, warningId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/moderation/warnings/${warningId}`, {
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/moderation/warnings/${encodeURIComponent(warningId)}`, {
       method: "DELETE",
     }),
 
   // --- Tickets ---
-  getTicketConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/tickets`),
+  getTicketConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/tickets`),
   setTicketConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/tickets`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/tickets`, { method: "PUT", json: data }),
 
   // --- Suggestions ---
   getSuggestionConfig: (guildId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/suggestions/config`),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/suggestions/config`),
   setSuggestionConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/suggestions/config`, { method: "PUT", json: data }),
-  listSuggestions: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/suggestions`),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/suggestions/config`, { method: "PUT", json: data }),
+  listSuggestions: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/suggestions`),
   decideSuggestion: (
     guildId: string,
     suggestionId: string,
     decision: "approved" | "denied",
     note?: string
   ) =>
-    bridgeFetch(`/api/guilds/${guildId}/suggestions/${suggestionId}/decide`, {
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/suggestions/${encodeURIComponent(suggestionId)}/decide`, {
       json: { decision, note },
     }),
 
   // --- Reports ---
-  getReportConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/reports/config`),
+  getReportConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/reports/config`),
   setReportConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/reports/config`, { method: "PUT", json: data }),
-  listReports: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/reports`),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/reports/config`, { method: "PUT", json: data }),
+  listReports: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/reports`),
   closeReport: (guildId: string, reportId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/reports/${reportId}/close`, { json: {} }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/reports/${encodeURIComponent(reportId)}/close`, { json: {} }),
 
   // --- Birthday ---
-  getBirthdayConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/birthday`),
+  getBirthdayConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/birthday`),
   setBirthdayConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/birthday`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/birthday`, { method: "PUT", json: data }),
 
   // --- Autorole ---
-  getAutoroleConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/autorole`),
+  getAutoroleConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/autorole`),
   setAutoroleConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/autorole`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/autorole`, { method: "PUT", json: data }),
 
   // --- Leveling ---
-  getLevelingConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/leveling/config`),
+  getLevelingConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/leveling/config`),
   setLevelingConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/leveling/config`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/leveling/config`, { method: "PUT", json: data }),
   listLevelRewards: (guildId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/leveling/rewards`),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/leveling/rewards`),
   setLevelRewards: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/leveling/rewards`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/leveling/rewards`, { method: "PUT", json: data }),
   listLevelingUsers: (guildId: string, query?: string) =>
     bridgeFetch(
-      `/api/guilds/${guildId}/leveling/users${query ? `?search=${encodeURIComponent(query)}` : ""}`
+      `/api/guilds/${encodeURIComponent(guildId)}/leveling/users${query ? `?search=${encodeURIComponent(query)}` : ""}`
     ),
   setUserXp: (guildId: string, userId: string, xp: number) =>
-    bridgeFetch(`/api/guilds/${guildId}/leveling/users/${userId}`, { method: "PUT", json: { xp } }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/leveling/users/${encodeURIComponent(userId)}`, { method: "PUT", json: { xp } }),
   resetUserXp: (guildId: string, userId: string) =>
-    bridgeFetch(`/api/guilds/${guildId}/leveling/users/${userId}/reset`, { json: {} }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/leveling/users/${encodeURIComponent(userId)}/reset`, { json: {} }),
 
   // --- Languages ---
-  getLanguageStats: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/languages`),
+  getLanguageStats: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/languages`),
 
   // --- Server config ---
-  getServerConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/server`),
+  getServerConfig: (guildId: string) => bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/server`),
   setServerConfig: (guildId: string, data: unknown) =>
-    bridgeFetch(`/api/guilds/${guildId}/server`, { method: "PUT", json: data }),
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/server`, { method: "PUT", json: data }),
+
+  // --- Webhooks ---
+  listWebhooks: (guildId: string) =>
+    bridgeFetch<{ id: string; endpointHost: string; events: string[]; enabled: boolean; createdAt: string; updatedAt: string }[]>(
+      `/api/guilds/${encodeURIComponent(guildId)}/webhooks`
+    ),
+  createWebhook: (guildId: string, data: { endpoint: string; events: string[] }) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks`, { method: "POST", json: data }),
+  updateWebhook: (guildId: string, webhookId: string, data: { endpoint?: string; events?: string[]; enabled?: boolean }) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}`, { method: "PATCH", json: data }),
+  deleteWebhook: (guildId: string, webhookId: string) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}`, { method: "DELETE" }),
+  testWebhook: (guildId: string, webhookId: string) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}/test`, { method: "POST", json: {} }),
+  listWebhookDeliveries: (guildId: string, webhookId: string) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}/deliveries`),
+
 };

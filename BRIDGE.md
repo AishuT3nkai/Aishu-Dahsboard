@@ -2,7 +2,7 @@
 
 The dashboard does not open the bot's local SQLite database. Vercel and the bot host do not share a filesystem, and the bot may be writing to the database while the dashboard is running. Instead, the **Aishu Bot process** must expose a private HTTP API (the bridge) that the dashboard calls from server-side route handlers.
 
-As of October 2026, this bridge has **not yet been implemented in `AishuT3nkai/Aishu-Bot`**. Until it exists and `BOT_API_BASE_URL` / `BOT_API_SHARED_SECRET` are configured correctly, configuration pages must continue to show an unavailable/error state rather than inventing or pretending to save real bot settings.
+The bot-side bridge is implemented in `AishuT3nkai/Aishu-Bot/bridge.py` for the endpoints listed there, with remaining feature gaps noted below. The webhook management routes are implemented on the `feat/secure-dashboard-webhooks` branch. They are not live in production until the changes are reviewed/merged, deployed, and `BOT_API_BASE_URL`, `BOT_API_SHARED_SECRET`, and `BOT_WEBHOOK_ENCRYPTION_KEY` are configured correctly.
 
 ## Transport and authentication
 
@@ -86,10 +86,10 @@ Webhook delivery must use signed payloads, bounded timeouts, retries with backof
 
 ## Known integration gaps
 
-- **The bridge itself is absent.** Every live read/write in the dashboard depends on the endpoints above.
+- **Bridge coverage is partial.** Every dashboard feature still depends on its specific bot endpoint; unsupported routes must continue to fail visibly rather than pretending to save.
 - **Leveling persistence and runtime behavior** require bot-side tables, XP update logic, rewards, and any intended rank/leaderboard commands.
 - **Per-guild configuration persistence** is required for verification, welcome/goodbye, moderation, tickets, suggestions, reports, birthday, autorole, AutoMod, and server settings.
 - **Channel and role lookup endpoints** must be added before replacing manual-ID fields with selectors.
-- **Webhook management** remains draft-only until secure storage, event subscriptions, signing, delivery retry/backoff, SSRF protection, and redacted operational logs are implemented.
+- **Webhook management** is implemented on the feature branch with encrypted endpoint/signing-secret storage, a strict event allowlist, HMAC-SHA256 signatures, bounded retries, public-IP DNS checks, redirect blocking, and redacted delivery metadata. Delivery retries are in-process (not a durable queue), and production activation still requires deployment/configuration plus CI and end-to-end verification.
 - **Advanced anti-raid settings** are browser-only drafts until bridge-backed persistence and bot enforcement exist.
 - Dashboard equivalents should only replace or disable existing Discord setup/panel commands after the corresponding bridge-backed feature has been verified end to end.
