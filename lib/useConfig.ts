@@ -16,6 +16,23 @@ interface UseConfigResult<T> {
   reload: () => void;
 }
 
+function hasConfigData<T>(body: unknown): body is { data: T } {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    Object.prototype.hasOwnProperty.call(body, "data") &&
+    (body as { data?: unknown }).data !== undefined
+  );
+}
+
+function responseError(body: unknown, fallback: string): string {
+  if (typeof body === "object" && body !== null) {
+    const error = (body as { error?: unknown }).error;
+    if (typeof error === "string" && error.trim()) return error;
+  }
+  return fallback;
+}
+
 export function useConfig<T>(endpoint: string): UseConfigResult<T> {
   const { guildId, loading: guildsLoading, error: guildsError } = useGuild();
   const [data, setData] = useState<T | null>(null);
@@ -47,10 +64,15 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
     (async () => {
       try {
         const res = await fetch(`${endpoint}?guildId=${encodeURIComponent(guildId)}`);
-        const body = await res.json().catch(() => ({}));
+        const body: unknown = await res.json().catch(() => null);
         if (!res.ok) {
-          if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
-          throw new Error(body.error ?? "Failed to load.");
+          if (typeof body === "object" && body !== null && (body as { code?: unknown }).code === "BRIDGE_NOT_CONFIGURED") {
+            if (!cancelled) setBridgeUnconfigured(true);
+          }
+          throw new Error(responseError(body, "Failed to load."));
+        }
+        if (!hasConfigData<T>(body)) {
+          throw new Error("The config response was invalid. Please reload and try again.");
         }
         if (cancelled) return;
         setData(body.data);
@@ -76,12 +98,14 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
       });
-      const body = await res.json().catch(() => ({}));
+      const body: unknown = await res.json().catch(() => null);
       if (!res.ok) {
-        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
-        throw new Error(body.error ?? "Failed to save.");
+        if (typeof body === "object" && body !== null && (body as { code?: unknown }).code === "BRIDGE_NOT_CONFIGURED") {
+          setBridgeUnconfigured(true);
+        }
+        throw new Error(responseError(body, "Failed to save."));
       }
-      if (!Object.prototype.hasOwnProperty.call(body, "data")) {
+      if (!hasConfigData<T>(body)) {
         throw new Error("The save response was invalid. Please reload and try again.");
       }
       setData(body.data);
