@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/session";
+import { getSessionUser, isAuthorizedAdmin } from "@/lib/session";
 import { Sidebar } from "@/components/Sidebar";
 import { GuildProvider } from "@/components/GuildProvider";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Defense-in-depth: middleware already blocks unauthenticated requests to
-  // these routes, but every server component re-checks too.
+  // Defense-in-depth: the middleware checks the encrypted token, and this
+  // server layout independently rechecks the current two-admin allowlist.
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user || !isAuthorizedAdmin(user.id)) {
+    redirect("/login?error=unauthorized");
+  }
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
