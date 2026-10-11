@@ -22,6 +22,10 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Report dependency audit findings
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node -e 'const fs = require("fs"); const audit = JSON.parse(fs.readFileSync("/tmp/npm-audit.json", "utf8")); for (const [name, item] of Object.entries(audit.vulnerabilities || {})) { const via = (item.via || []).filter((entry) => typeof entry === "object").map((entry) => `${entry.title} [${entry.range}] ${entry.url}`).join("; "); console.log(`${name}: severity=${item.severity}, direct=${item.isDirect}, range=${item.range}, fixAvailable=${JSON.stringify(item.fixAvailable)}, advisories=${via}`); }
       - name: ESLint
         run: npm run lint
       - name: TypeScript check
