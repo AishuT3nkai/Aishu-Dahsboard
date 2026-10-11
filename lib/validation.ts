@@ -85,8 +85,8 @@ export const levelingConfigSchema = z.object({
 });
 
 export const levelRewardsSchema = z.array(
-  z.object({ id: z.string(), level: z.number().int().min(1).max(1000), roleId: snowflake })
-);
+  z.object({ id: z.string().min(1).max(100), level: z.number().int().min(1).max(1000), roleId: snowflake })
+).max(100);
 
 export const serverConfigSchema = z.object({
   prefix: z.string().min(1).max(5),
