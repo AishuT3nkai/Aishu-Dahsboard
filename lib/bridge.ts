@@ -80,8 +80,12 @@ async function bridgeFetch<T>(
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new BridgeRequestError(res.status, `Bridge ${path} -> ${res.status}: ${text}`);
+    // Never forward upstream response bodies; they may contain private details.
+    await res.body?.cancel().catch(() => undefined);
+    throw new BridgeRequestError(
+      res.status,
+      `The bot bridge request failed (${res.status}). Check the bridge service logs.`
+    );
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
