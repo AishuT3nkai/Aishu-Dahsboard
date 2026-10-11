@@ -77,7 +77,11 @@ export function isAuthorizedAdmin(discordUserId: string): boolean {
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const session = await readSession();
-  if (!session) return null;
+  // A cryptographically valid cookie is not enough: the two-admin allowlist
+  // is authoritative and may have changed since this session was issued.
+  // Returning null here also prevents stale sessions from causing a
+  // /login <-> /overview redirect loop after an admin is removed.
+  if (!session || !isAuthorizedAdmin(session.sub)) return null;
   return { id: session.sub, username: session.username, avatar: session.avatar };
 }
 
