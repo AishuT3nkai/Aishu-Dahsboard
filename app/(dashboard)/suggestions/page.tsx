@@ -30,6 +30,7 @@ function SuggestionsList() {
       return;
     }
     setLoading(true);
+    setItems(null);
     setError(null);
     setBridgeUnconfigured(false);
     try {
