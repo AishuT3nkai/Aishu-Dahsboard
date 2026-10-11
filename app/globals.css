@@ -1,6 +1,30 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-base-950: #0a0b0f;
+  --color-base-900: #121319;
+  --color-base-850: #171923;
+  --color-base-800: #1c1f2b;
+  --color-base-750: #22263381;
+  --color-base-700: #2a2f3f;
+  --color-base-600: #3a4055;
+  --color-base-500: #565d78;
+  --color-base-400: #7b8299;
+  --color-base-300: #a6acbf;
+  --color-base-200: #d3d6e0;
+  --color-base-100: #eef0f5;
+
+  --color-accent: #7c8cff;
+  --color-accent-dim: #5865f2;
+  --color-accent-bright: #9aa5ff;
+  --color-good: #3fb87f;
+  --color-warn: #e0a63f;
+  --color-bad: #e05252;
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --radius-card: 10px;
+}
 
 :root {
   color-scheme: dark;

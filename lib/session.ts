@@ -39,7 +39,8 @@ export async function createSession(payload: SessionPayload) {
     .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
     .encrypt(await getSecretKey());
 
-  cookies().set(SESSION_COOKIE, token, {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -48,12 +49,14 @@ export async function createSession(payload: SessionPayload) {
   });
 }
 
-export function clearSession() {
-  cookies().delete(SESSION_COOKIE);
+export async function clearSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE);
 }
 
 export async function readSession(): Promise<SessionPayload | null> {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtDecrypt(token, await getSecretKey());

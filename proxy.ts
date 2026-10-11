@@ -18,7 +18,7 @@ function isAllowedAdmin(discordUserId: unknown): boolean {
 // Defense-in-depth: dashboard pages and API routes both re-check that the
 // session subject is still in the live two-user allowlist. API handlers also
 // perform their authoritative admin and guild checks.
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const secret = process.env.DASHBOARD_SESSION_SECRET;
 

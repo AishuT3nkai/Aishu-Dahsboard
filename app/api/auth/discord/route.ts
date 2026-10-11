@@ -8,7 +8,8 @@ const STATE_COOKIE = "aishu_oauth_state";
 export async function GET() {
   const state = randomBytes(16).toString("hex");
 
-  cookies().set(STATE_COOKIE, state, {
+  const cookieStore = await cookies();
+  cookieStore.set(STATE_COOKIE, state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
