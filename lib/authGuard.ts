@@ -81,7 +81,10 @@ export function handleApiError(err: unknown) {
     return NextResponse.json({ error: err.message, code: "BRIDGE_NOT_CONFIGURED" }, { status: 503 });
   }
   if (err instanceof BridgeRequestError) {
-    return NextResponse.json({ error: err.message }, { status: 502 });
+    // Preserve safe upstream validation/rate-limit statuses. Treat upstream
+    // auth failures and server/network failures as a bad gateway instead.
+    const status = [400, 404, 409, 422, 429].includes(err.status) ? err.status : 502;
+    return NextResponse.json({ error: err.message }, { status });
   }
   console.error(err);
   return NextResponse.json({ error: "Unexpected server error." }, { status: 500 });
