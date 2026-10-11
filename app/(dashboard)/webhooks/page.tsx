@@ -10,7 +10,6 @@ const TEMPLATE_URL = "https://webhook-studio-rho.vercel.app/templates";
 const EVENTS = [
   { id: "member.joined", label: "Member joined", description: "A new account joins the server." },
   { id: "member.verified", label: "Member verified", description: "A member completes the verification flow." },
-  { id: "member.quarantined", label: "Member quarantined", description: "Anti-raid policy restricts a suspicious join." },
   { id: "raid.detected", label: "Raid signal detected", description: "Join velocity crosses the configured threshold." },
   { id: "raid.cleared", label: "Raid mode cleared", description: "A moderator clears the raid signal." },
   { id: "moderation.action", label: "Moderation action", description: "A configured moderation action is recorded." },
