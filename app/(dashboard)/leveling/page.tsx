@@ -99,6 +99,7 @@ function RewardsPanel() {
                 className="w-24"
                 value={r.level}
                 min={1}
+                aria-label={`Reward level ${i + 1}`}
                 onChange={(e) => {
                   const next = [...rewards];
                   next[i] = { ...r, level: Number(e.target.value) };
