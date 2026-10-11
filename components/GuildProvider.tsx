@@ -89,13 +89,15 @@ export function GuildProvider({ children }: { children: React.ReactNode }) {
   }, [reloadTick]);
 
   const setGuildId = useCallback((id: string) => {
+    // Only allow selecting a guild returned by the server-authorized list.
+    if (!guilds.some((guild) => guild.id === id)) return;
     setGuildIdState(id);
     try {
       window.localStorage.setItem(STORAGE_KEY, id);
     } catch {
       // The selected guild still works for this session when storage is unavailable.
     }
-  }, []);
+  }, [guilds]);
 
   const reload = useCallback(() => setReloadTick((tick) => tick + 1), []);
 
