@@ -23,6 +23,7 @@ function ReportsList() {
     }
     setLoading(true);
     setError(null);
+    setBridgeUnconfigured(false);
     try {
       const res = await fetch(`/api/dashboard/reports?guildId=${encodeURIComponent(guildId)}`);
       const body = await res.json().catch(() => ({}));
