@@ -4,15 +4,25 @@ import { jwtDecrypt } from "jose";
 
 const SESSION_COOKIE = "aishu_dashboard_session";
 
-// This is defense-in-depth. The authoritative check is
-// requireAdminSession() inside every /api/dashboard/* route handler, which
-// also re-checks the two-ID allowlist on every call. Middleware just keeps
-// unauthenticated requests from reaching the page/route at all.
+function isAllowedAdmin(discordUserId: unknown): boolean {
+  if (typeof discordUserId !== "string") return false;
+
+  const allowed = [
+    process.env.ADMIN_USER_ID_1 ?? process.env.DISCORD_USER_ID_1,
+    process.env.ADMIN_USER_ID_2 ?? process.env.DISCORD_USER_ID_2,
+  ].filter((value): value is string => Boolean(value));
+
+  return allowed.includes(discordUserId);
+}
+
+// Defense-in-depth: dashboard pages and API routes both re-check that the
+// session subject is still in the live two-user allowlist. API handlers also
+// perform their authoritative admin and guild checks.
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const secret = process.env.DASHBOARD_SESSION_SECRET;
 
-  let valid = false;
+  let authorized = false;
   if (token && secret && secret.length >= 16) {
     try {
       // Match lib/session.ts: sessions are encrypted JWE tokens using a
@@ -20,18 +30,19 @@ export async function middleware(req: NextRequest) {
       const key = new Uint8Array(
         await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret))
       );
-      await jwtDecrypt(token, key);
-      valid = true;
+      const { payload } = await jwtDecrypt(token, key);
+      authorized = isAllowedAdmin(payload.sub);
     } catch {
-      valid = false;
+      authorized = false;
     }
   }
 
-  if (!valid) {
+  if (!authorized) {
     if (req.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated as an authorized dashboard admin." }, { status: 401 });
     }
     const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("error", token ? "unauthorized" : "login_required");
     return NextResponse.redirect(loginUrl);
   }
 
@@ -49,6 +60,8 @@ export const config = {
     "/reports",
     "/birthday",
     "/autorole",
+    "/automod",
+    "/webhooks",
     "/leveling",
     "/languages",
     "/server",
