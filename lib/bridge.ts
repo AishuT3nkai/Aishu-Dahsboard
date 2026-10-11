@@ -189,4 +189,21 @@ export const bridge = {
   getServerConfig: (guildId: string) => bridgeFetch(`/api/guilds/${guildId}/server`),
   setServerConfig: (guildId: string, data: unknown) =>
     bridgeFetch(`/api/guilds/${guildId}/server`, { method: "PUT", json: data }),
+
+  // --- Webhooks ---
+  listWebhooks: (guildId: string) =>
+    bridgeFetch<{ id: string; endpointHost: string; events: string[]; enabled: boolean; createdAt: string; updatedAt: string }[]>(
+      `/api/guilds/${encodeURIComponent(guildId)}/webhooks`
+    ),
+  createWebhook: (guildId: string, data: { endpoint: string; events: string[] }) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks`, { method: "POST", json: data }),
+  updateWebhook: (guildId: string, webhookId: string, data: { endpoint?: string; events?: string[]; enabled?: boolean }) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}`, { method: "PATCH", json: data }),
+  deleteWebhook: (guildId: string, webhookId: string) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}`, { method: "DELETE" }),
+  testWebhook: (guildId: string, webhookId: string) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}/test`, { method: "POST", json: {} }),
+  listWebhookDeliveries: (guildId: string, webhookId: string) =>
+    bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/webhooks/${encodeURIComponent(webhookId)}/deliveries`),
+
 };
