@@ -3,13 +3,17 @@ import { requireAdminSession, requireAuthorizedGuild, handleApiError } from "@/l
 import { readSession } from "@/lib/session";
 import { bridge } from "@/lib/bridge";
 import { guildIdFromRequest } from "@/lib/apiHelpers";
-import { suggestionDecisionSchema } from "@/lib/validation";
+import { resourceIdSchema, suggestionDecisionSchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await requireAdminSession();
     const session = await readSession();
     const guildId = await requireAuthorizedGuild(session!.discordAccessToken, guildIdFromRequest(req));
+
+    if (!resourceIdSchema.safeParse(params.id).success) {
+      return NextResponse.json({ error: "Invalid suggestion ID." }, { status: 400 });
+    }
 
     let payload: unknown;
     try {
