@@ -3,6 +3,7 @@ import { readSession, isAuthorizedAdmin } from "./session";
 import { fetchManageableGuilds } from "./discord";
 import { bridge, BridgeNotConfiguredError, BridgeRequestError } from "./bridge";
 import type { DiscordGuildSummary } from "./types";
+import { discordIdSchema } from "./validation";
 
 export class ApiError extends Error {
   status: number;
@@ -62,6 +63,9 @@ export async function requireAuthorizedGuild(
   guildId: string | null
 ): Promise<string> {
   if (!guildId) throw new ApiError(400, "Missing guildId.");
+  if (!discordIdSchema.safeParse(guildId).success) {
+    throw new ApiError(400, "Invalid Discord guild ID.");
+  }
   const authorized = await authorizedGuildsFor(discordAccessToken);
   if (!authorized.some((g) => g.id === guildId)) {
     throw new ApiError(403, "You are not authorized to manage this guild.");
@@ -77,7 +81,10 @@ export function handleApiError(err: unknown) {
     return NextResponse.json({ error: err.message, code: "BRIDGE_NOT_CONFIGURED" }, { status: 503 });
   }
   if (err instanceof BridgeRequestError) {
-    return NextResponse.json({ error: err.message }, { status: 502 });
+    // Preserve safe upstream validation/rate-limit statuses. Treat upstream
+    // auth failures and server/network failures as a bad gateway instead.
+    const status = [400, 404, 409, 422, 429].includes(err.status) ? err.status : 502;
+    return NextResponse.json({ error: err.message }, { status });
   }
   console.error(err);
   return NextResponse.json({ error: "Unexpected server error." }, { status: 500 });

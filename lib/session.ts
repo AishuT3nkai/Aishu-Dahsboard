@@ -77,7 +77,9 @@ export function isAuthorizedAdmin(discordUserId: string): boolean {
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const session = await readSession();
-  if (!session) return null;
+  // A valid encrypted cookie is not enough if the admin allowlist has changed.
+  // This also prevents a stale session from looping between /login and /overview.
+  if (!session || !isAuthorizedAdmin(session.sub)) return null;
   return { id: session.sub, username: session.username, avatar: session.avatar };
 }
 

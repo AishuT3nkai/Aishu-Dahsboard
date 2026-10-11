@@ -20,6 +20,7 @@ function SuggestionsList() {
   const [loading, setLoading] = useState(true);
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!guildId) {
@@ -56,6 +57,7 @@ function SuggestionsList() {
   async function decide(id: string, decision: "approved" | "denied") {
     if (!guildId) return;
     setError(null);
+    setActionPending(id);
     try {
       const res = await fetch(`/api/dashboard/suggestions/${encodeURIComponent(id)}/decide?guildId=${encodeURIComponent(guildId)}`, {
         method: "POST",
@@ -67,6 +69,8 @@ function SuggestionsList() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${decision} suggestion.`);
+    } finally {
+      setActionPending(null);
     }
   }
 
@@ -97,10 +101,10 @@ function SuggestionsList() {
               <p className="text-sm text-base-300">{s.content}</p>
               {s.status === "pending" && (
                 <div className="mt-3 flex gap-2">
-                  <Button variant="primary" onClick={() => decide(s.id, "approved")}>
+                  <Button variant="primary" disabled={actionPending !== null} onClick={() => decide(s.id, "approved")}>
                     Approve
                   </Button>
-                  <Button variant="danger" onClick={() => decide(s.id, "denied")}>
+                  <Button variant="danger" disabled={actionPending !== null} onClick={() => decide(s.id, "denied")}>
                     Deny
                   </Button>
                 </div>
