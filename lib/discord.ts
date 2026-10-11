@@ -34,7 +34,9 @@ export async function exchangeCodeForToken(code: string) {
   });
 
   if (!res.ok) {
-    throw new Error(`Discord token exchange failed: ${res.status} ${await res.text()}`);
+    // Avoid copying provider response bodies into application logs.
+    await res.body?.cancel().catch(() => undefined);
+    throw new Error(`Discord token exchange failed (${res.status}).`);
   }
 
   return (await res.json()) as {
