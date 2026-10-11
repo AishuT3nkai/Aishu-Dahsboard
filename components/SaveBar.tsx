@@ -22,7 +22,7 @@ export function SaveBar({
       <div className="mb-6 rounded-card border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
         This page loads from and saves to the live bot, but the bot bridge isn&apos;t configured
         on this deployment yet (BOT_API_BASE_URL / BOT_API_SHARED_SECRET). Nothing here will
-        appear to work until that&apos;s set up — see dashboard/BRIDGE.md.
+        appear to work until that&apos;s set up — see BRIDGE.md.
       </div>
     );
   }
