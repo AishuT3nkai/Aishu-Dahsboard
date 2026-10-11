@@ -24,11 +24,14 @@ function SuggestionsList() {
   const load = useCallback(async () => {
     if (!guildId) {
       setItems(null);
+      setError(null);
+      setBridgeUnconfigured(false);
       setLoading(false);
       return;
     }
     setLoading(true);
     setError(null);
+    setBridgeUnconfigured(false);
     try {
       const res = await fetch(`/api/dashboard/suggestions?guildId=${encodeURIComponent(guildId)}`);
       const body = await res.json().catch(() => ({}));
@@ -66,20 +69,23 @@ function SuggestionsList() {
     }
   }
 
-  if (bridgeUnconfigured) return null;
-
   return (
     <Card title="Suggestion queue">
       <div className="mb-3 flex justify-end">
-        <Button variant="secondary" onClick={() => void load()} disabled={loading}>
+        <Button variant="secondary" onClick={() => void load()} disabled={loading || !guildId}>
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
       {error && <div role="alert" className="mb-3 text-sm text-bad">{error}</div>}
+      {bridgeUnconfigured && (
+        <p className="mb-3 text-sm text-base-400">
+          The bot bridge is not configured, so live suggestions cannot be loaded yet. Configure the bridge before using this queue.
+        </p>
+      )}
       {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to view suggestions.</p>}
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
-      {items && items.length === 0 && <p className="text-sm text-base-500">No suggestions yet.</p>}
-      {items && items.length > 0 && (
+      {!loading && guildId && !bridgeUnconfigured && !error && items && items.length === 0 && <p className="text-sm text-base-500">No suggestions yet.</p>}
+      {!loading && guildId && !bridgeUnconfigured && items && items.length > 0 && (
         <div className="space-y-2">
           {items.map((s) => (
             <div key={s.id} className="rounded-card border border-base-800 bg-base-950 p-3">
