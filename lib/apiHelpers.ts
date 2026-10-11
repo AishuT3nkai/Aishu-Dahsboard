@@ -35,7 +35,12 @@ export function createConfigRoute<T>(
       await requireAdminSession();
       const session = await readSession();
       const guildId = await requireAuthorizedGuild(session!.discordAccessToken, guildIdFromRequest(req));
-      const body = await req.json();
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+      }
       const parsed = schema.safeParse(body);
       if (!parsed.success) {
         return NextResponse.json(
