@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const discordIdSchema = z.string().regex(/^\d{15,25}$/, "Must be a Discord ID (snowflake).");
+export const resourceIdSchema = z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, "Invalid resource ID.");
 const snowflake = discordIdSchema;
 const optionalSnowflake = snowflake.nullable();
 
