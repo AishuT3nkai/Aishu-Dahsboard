@@ -27,5 +27,8 @@
     "eslint": "10.10.0",
     "eslint-config-next": "16.4.0",
     "@tailwindcss/postcss": "4.3.3"
+  },
+  "overrides": {
+    "braces": "3.0.4"
   }
 }
