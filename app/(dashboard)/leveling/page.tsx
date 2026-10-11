@@ -46,6 +46,20 @@ function RewardsPanel() {
 
   async function save(next: LevelRewardEntry[]) {
     if (!guildId || saving) return;
+    const invalid = next.find((reward) =>
+      !Number.isInteger(reward.level) ||
+      reward.level < 1 ||
+      !/^\\d{17,20}$/.test(reward.roleId.trim())
+    );
+    if (invalid) {
+      setError("Each reward needs a whole-number level (1 or higher) and a valid Discord role ID.");
+      return;
+    }
+    const levels = next.map((reward) => reward.level);
+    if (new Set(levels).size !== levels.length) {
+      setError("Each level can have only one reward. Remove duplicate levels before saving.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
