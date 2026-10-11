@@ -13,7 +13,6 @@ function WarningsPanel() {
   const [warnings, setWarnings] = useState<WarningEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
 
   const load = useCallback(async () => {
     if (!guildId) {
@@ -25,13 +24,11 @@ function WarningsPanel() {
 
     setLoading(true);
     setError(null);
-    setBridgeUnconfigured(false);
 
     try {
       const res = await fetch(`/api/dashboard/moderation/warnings?guildId=${encodeURIComponent(guildId)}`);
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
         throw new Error(body.error ?? "Failed to load warnings.");
       }
       setWarnings(Array.isArray(body.data) ? body.data : []);
