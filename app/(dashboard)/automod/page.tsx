@@ -49,6 +49,41 @@ export default function AutoModPage() {
               placeholder={"word to block\nphrase to block"} />
           </FieldGroup>
         </Card>
+        <Card title="Action policy" description="Choose the default response to a detected violation. Timeout length is configured below.">
+          <FieldGroup label="Default moderation action">
+            <select
+              value={draft.action}
+              onChange={(e) => update({ action: e.target.value as AutomodConfig["action"] })}
+              className="focus-ring w-full rounded-card border border-base-700 bg-base-900 px-3 py-2 text-sm text-base-100"
+            >
+              <option value="delete">Delete message</option>
+              <option value="warn">Warn member</option>
+              <option value="timeout">Timeout member</option>
+            </select>
+          </FieldGroup>
+        </Card>
+        <Card title="Exemptions" description="Exempt trusted roles or specific channels from AutoMod checks. Use one Discord ID per line. Role and channel pickers will be added after the authenticated bridge lookup endpoints exist.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <FieldGroup label="Exempt role IDs" hint="Discord role IDs only; up to 100 entries.">
+              <TextArea
+                rows={6}
+                value={draft.exempt_roles.join("\n")}
+                onChange={(e) => update({ exempt_roles: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 100) })}
+                placeholder={"123456789012345678\n234567890123456789"}
+                aria-label="Exempt role IDs, one per line"
+              />
+            </FieldGroup>
+            <FieldGroup label="Exempt channel IDs" hint="Discord channel IDs only; up to 100 entries.">
+              <TextArea
+                rows={6}
+                value={draft.exempt_channels.join("\n")}
+                onChange={(e) => update({ exempt_channels: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 100) })}
+                placeholder={"123456789012345678\n234567890123456789"}
+                aria-label="Exempt channel IDs, one per line"
+              />
+            </FieldGroup>
+          </div>
+        </Card>
         <Card title="Repeat-offense policy" description="With escalation enabled, the first violation is deleted and warned; another violation of the same rule within 10 minutes triggers a timeout.">
           <Toggle label="Escalate repeat violations" checked={draft.escalation} onChange={(v) => update({ escalation: v })} />
           <div className="mt-4 grid gap-4 md:grid-cols-2">
