@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { bridge } from "@/lib/bridge";
-import { handleApiError, requireAdminSession, requireAuthorizedGuild } from "@/lib/authGuard";
+import { ApiError, handleApiError, requireAdminSession, requireAuthorizedGuild } from "@/lib/authGuard";
 
 async function authorizedGuildId(req: NextRequest) {
   const session = await requireAdminSession();
@@ -13,7 +13,7 @@ async function authorizedGuildId(req: NextRequest) {
 function webhookIdFromRequest(req: NextRequest): string {
   const id = req.nextUrl.searchParams.get("webhookId");
   if (!id || !/^\d+$/.test(id)) {
-    throw new Error("A valid webhookId is required.");
+    throw new ApiError(400, "A valid webhookId is required.");
   }
   return id;
 }
