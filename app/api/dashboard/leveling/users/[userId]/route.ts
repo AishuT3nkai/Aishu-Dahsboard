@@ -3,6 +3,7 @@ import { requireAdminSession, requireAuthorizedGuild, handleApiError } from "@/l
 import { readSession } from "@/lib/session";
 import { bridge } from "@/lib/bridge";
 import { guildIdFromRequest } from "@/lib/apiHelpers";
+import { discordIdSchema } from "@/lib/validation";
 import { xpSetSchema } from "@/lib/validation";
 
 export async function PUT(req: NextRequest, { params }: { params: { userId: string } }) {
@@ -10,6 +11,10 @@ export async function PUT(req: NextRequest, { params }: { params: { userId: stri
     await requireAdminSession();
     const session = await readSession();
     const guildId = await requireAuthorizedGuild(session!.discordAccessToken, guildIdFromRequest(req));
+
+    if (!discordIdSchema.safeParse(params.userId).success) {
+      return NextResponse.json({ error: "Invalid Discord user ID." }, { status: 400 });
+    }
 
     let payload: unknown;
     try {
