@@ -74,7 +74,8 @@ export const autoroleConfigSchema = z.object({
 
 export const levelingConfigSchema = z.object({
   enabled: z.boolean(),
-  xpPerMessage: z.object({ min: z.number().int().min(0), max: z.number().int().min(0) }),
+  xpPerMessage: z.object({ min: z.number().int().min(0), max: z.number().int().min(0) })
+    .refine((range) => range.max >= range.min, "Maximum XP must be greater than or equal to minimum XP."),
   xpCooldownSeconds: z.number().int().min(0).max(3600),
   xpMultiplier: z.number().min(0.1).max(10),
   levelUpChannelId: optionalSnowflake,
@@ -86,7 +87,19 @@ export const levelingConfigSchema = z.object({
 
 export const levelRewardsSchema = z.array(
   z.object({ id: z.string().min(1).max(100), level: z.number().int().min(1).max(1000), roleId: snowflake })
-).max(100);
+).max(100).superRefine((rewards, ctx) => {
+  const seenLevels = new Set<number>();
+  rewards.forEach((reward, index) => {
+    if (seenLevels.has(reward.level)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index, "level"],
+        message: "Each level can only have one reward.",
+      });
+    }
+    seenLevels.add(reward.level);
+  });
+});
 
 export const serverConfigSchema = z.object({
   prefix: z.string().min(1).max(5),
