@@ -19,13 +19,19 @@ export default function SettingsPage() {
 
     const [userResult, statusResult] = await Promise.allSettled([
       fetch("/api/auth/me").then(async (response) => {
-        const body = await response.json();
+        const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error ?? "Could not load the signed-in account.");
+        if (!body.user || typeof body.user !== "object") {
+          throw new Error("The signed-in account response was invalid.");
+        }
         return body.user as SessionUser;
       }),
       fetch("/api/dashboard/status").then(async (response) => {
-        const body = await response.json();
+        const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error ?? "Could not load bridge status.");
+        if (typeof body.bridgeConfigured !== "boolean" || typeof body.guildPinned !== "boolean") {
+          throw new Error("The bridge status response was invalid.");
+        }
         return body as ConnectionStatus;
       }),
     ]);
