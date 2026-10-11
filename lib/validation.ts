@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const snowflake = z.string().regex(/^\d{15,25}$/, "Must be a Discord ID (snowflake).");
+export const discordIdSchema = z.string().regex(/^\d{15,25}$/, "Must be a Discord ID (snowflake).");
+const snowflake = discordIdSchema;
 const optionalSnowflake = snowflake.nullable();
 
 export const verificationSchema = z.object({
