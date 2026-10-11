@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const expectedState = cookies().get(STATE_COOKIE)?.value;
-  cookies().delete(STATE_COOKIE);
+  const cookieStore = await cookies();
+  const expectedState = cookieStore.get(STATE_COOKIE)?.value;
+  cookieStore.delete(STATE_COOKIE);
 
   if (!code || !state || !expectedState || state !== expectedState) {
     return NextResponse.redirect(new URL("/login?error=state_mismatch", req.url));
