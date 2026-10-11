@@ -5,13 +5,14 @@ import { bridge } from "@/lib/bridge";
 import { guildIdFromRequest } from "@/lib/apiHelpers";
 import { discordIdSchema, xpSetSchema } from "@/lib/validation";
 
-export async function PUT(req: NextRequest, { params }: { params: { userId: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
+    const { userId } = await params;
     await requireAdminSession();
     const session = await readSession();
     const guildId = await requireAuthorizedGuild(session!.discordAccessToken, guildIdFromRequest(req));
 
-    if (!discordIdSchema.safeParse(params.userId).success) {
+    if (!discordIdSchema.safeParse(userId).success) {
       return NextResponse.json({ error: "Invalid Discord user ID." }, { status: 400 });
     }
 
@@ -30,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: { userId: stri
       );
     }
 
-    const data = await bridge.setUserXp(guildId, params.userId, parsed.data.xp);
+    const data = await bridge.setUserXp(guildId, userId, parsed.data.xp);
     return NextResponse.json({ data });
   } catch (err) {
     return handleApiError(err);
