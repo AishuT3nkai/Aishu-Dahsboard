@@ -36,7 +36,13 @@ export default function OverviewPage() {
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (!guildId) return;
+    if (!guildId) {
+      setStats(null);
+      setError(null);
+      setBridgeUnconfigured(false);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -44,7 +50,7 @@ export default function OverviewPage() {
     (async () => {
       try {
         const res = await fetch(`/api/dashboard/overview?guildId=${encodeURIComponent(guildId)}`);
-        const body = await res.json();
+        const body = await res.json().catch(() => ({}));
         if (!res.ok) {
           if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
           throw new Error(body.error ?? "Failed to load overview.");
