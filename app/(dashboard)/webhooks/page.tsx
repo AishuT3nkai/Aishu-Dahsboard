@@ -284,7 +284,7 @@ export default function WebhooksPage() {
 
         <Card title="Security notes" description="Requests are signed with HMAC-SHA256 using the one-time signing secret. Verify the signature over timestamp + '.' + the exact raw request body and reject stale timestamps.">
           <div className="flex items-start gap-2 text-sm text-base-300"><ShieldCheck size={17} className="mt-0.5 shrink-0 text-good" /><p>Webhook secrets are encrypted at rest. Delivery requests use HTTPS, do not follow redirects, reject non-public destination IPs, use bounded timeouts, retry transient failures, and record redacted delivery metadata.</p></div>
-          <div className="mt-3 flex items-start gap-2 text-sm text-warn"><CircleAlert size={17} className="mt-0.5 shrink-0" /><p>Keep the bot's encryption key stable and private. Changing it without migrating stored values makes existing webhook secrets unreadable.</p></div>
+          <div className="mt-3 flex items-start gap-2 text-sm text-warn"><CircleAlert size={17} className="mt-0.5 shrink-0" /><p>Keep the bot&apos;s encryption key stable and private. Changing it without migrating stored values makes existing webhook secrets unreadable.</p></div>
         </Card>
       </div>
     </div>
