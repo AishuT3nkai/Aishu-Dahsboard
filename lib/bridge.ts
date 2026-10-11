@@ -64,20 +64,26 @@ async function bridgeFetch<T>(
   if (!cfg) throw new BridgeNotConfiguredError();
 
   const { json, ...rest } = init ?? {};
-  const res = await fetch(`${cfg.baseUrl}${path}`, {
-    ...rest,
-    method: rest.method ?? (json ? "POST" : "GET"),
-    headers: {
-      Authorization: `Bearer ${cfg.secret}`,
-      "Content-Type": "application/json",
-      ...rest.headers,
-    },
-    body: json !== undefined ? JSON.stringify(json) : rest.body,
-    cache: "no-store",
-    // The bot bridge should be a private, non-public endpoint reachable
-    // from Vercel; a short timeout keeps a down bot from hanging requests.
-    signal: AbortSignal.timeout(8000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.baseUrl}${path}`, {
+      ...rest,
+      method: rest.method ?? (json !== undefined ? "POST" : "GET"),
+      headers: {
+        Authorization: `Bearer ${cfg.secret}`,
+        "Content-Type": "application/json",
+        ...rest.headers,
+      },
+      body: json !== undefined ? JSON.stringify(json) : rest.body,
+      cache: "no-store",
+      // The bot bridge should be a private, non-public endpoint reachable
+      // from Vercel; a short timeout keeps a down bot from hanging requests.
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    // Do not leak internal hostnames or low-level network error details.
+    throw new BridgeRequestError(502, "The bot bridge is unreachable or timed out. Check the bridge service.");
+  }
 
   if (!res.ok) {
     // Never forward upstream response bodies; they may contain private details.
