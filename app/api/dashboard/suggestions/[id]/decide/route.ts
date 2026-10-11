@@ -5,13 +5,14 @@ import { bridge } from "@/lib/bridge";
 import { guildIdFromRequest } from "@/lib/apiHelpers";
 import { resourceIdSchema, suggestionDecisionSchema } from "@/lib/validation";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await requireAdminSession();
     const session = await readSession();
     const guildId = await requireAuthorizedGuild(session!.discordAccessToken, guildIdFromRequest(req));
 
-    if (!resourceIdSchema.safeParse(params.id).success) {
+    if (!resourceIdSchema.safeParse(id).success) {
       return NextResponse.json({ error: "Invalid suggestion ID." }, { status: 400 });
     }
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const data = await bridge.decideSuggestion(
       guildId,
-      params.id,
+      id,
       parsed.data.decision,
       parsed.data.note
     );
