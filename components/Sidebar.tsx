@@ -110,7 +110,7 @@ function ProfileBlock({ user }: { user: SessionUser }) {
         <div className="text-xs text-base-500">Dashboard admin</div>
       </div>
       <form action="/api/auth/logout" method="post">
-        <button type="submit" className="focus-ring rounded-card p-2 text-base-400 hover:bg-base-800 hover:text-base-100" title="Log out">
+        <button type="submit" aria-label="Log out" className="focus-ring rounded-card p-2 text-base-400 hover:bg-base-800 hover:text-base-100" title="Log out">
           <LogOut size={16} />
         </button>
       </form>
@@ -155,7 +155,7 @@ export function Sidebar({ user }: { user: SessionUser }) {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <button type="button" className="absolute inset-0 bg-black/60" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />
           <div className="absolute inset-y-0 left-0 flex w-72 flex-col bg-base-900">
             <div className="flex items-center justify-between px-4 py-4">
               <span className="font-display text-sm font-semibold text-base-100">Aishu Bot</span>
