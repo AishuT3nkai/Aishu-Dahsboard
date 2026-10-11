@@ -18,6 +18,8 @@ function ReportsList() {
   const load = useCallback(async () => {
     if (!guildId) {
       setItems(null);
+      setError(null);
+      setBridgeUnconfigured(false);
       setLoading(false);
       return;
     }
