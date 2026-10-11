@@ -100,7 +100,7 @@ export default function SettingsPage() {
           <p className="mt-3 text-xs text-base-500">
             The dashboard never touches the bot&apos;s SQLite database directly. It talks to the
             live Aishu Bot process only through the authenticated bridge API described in
-            dashboard/BRIDGE.md.
+            BRIDGE.md.
           </p>
           {status && !status.bridgeConfigured && (
             <p className="mt-3 text-sm text-warn">
