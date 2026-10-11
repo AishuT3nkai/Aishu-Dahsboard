@@ -19,11 +19,15 @@ function RewardsPanel() {
   const load = useCallback(async () => {
     if (!guildId) {
       setRewards(null);
+      setError(null);
+      setBridgeUnconfigured(false);
       setLoading(false);
       return;
     }
     setLoading(true);
+    setRewards(null);
     setError(null);
+    setBridgeUnconfigured(false);
     try {
       const res = await fetch(`/api/dashboard/leveling/rewards?guildId=${encodeURIComponent(guildId)}`);
       const body = await res.json().catch(() => ({}));
@@ -49,7 +53,7 @@ function RewardsPanel() {
     const invalid = next.find((reward) =>
       !Number.isInteger(reward.level) ||
       reward.level < 1 ||
-      !/^\\d{17,20}$/.test(reward.roleId.trim())
+      !/^\d{17,20}$/.test(reward.roleId.trim())
     );
     if (invalid) {
       setError("Each reward needs a whole-number level (1 or higher) and a valid Discord role ID.");
@@ -85,10 +89,11 @@ function RewardsPanel() {
     <Card title="Level rewards" description="Roles granted automatically when a member reaches a level.">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         {error && <p role="alert" className="text-sm text-bad">{error}</p>}
-        <Button variant="secondary" onClick={() => void load()} disabled={loading || saving}>
+        <Button variant="secondary" onClick={() => void load()} disabled={loading || saving || !guildId}>
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
+      {bridgeUnconfigured && <p className="mb-3 text-sm text-base-400">The bot bridge is not configured, so live level rewards cannot be loaded or saved yet.</p>}
       {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to manage rewards.</p>}
       {loading && <div className="h-20 animate-pulse rounded-card bg-base-800" />}
       {rewards && (
@@ -155,11 +160,16 @@ function MembersPanel() {
   const load = useCallback(async () => {
     if (!guildId) {
       setUsers(null);
+      setEditing({});
+      setError(null);
+      setBridgeUnconfigured(false);
       setLoading(false);
       return;
     }
     setLoading(true);
+    setUsers(null);
     setError(null);
+    setBridgeUnconfigured(false);
     try {
       const params = new URLSearchParams({ guildId });
       if (search.trim()) params.set("search", search.trim());
@@ -247,15 +257,16 @@ function MembersPanel() {
           placeholder="Search by username…"
           className="min-w-0 flex-1"
         />
-        <Button variant="secondary" onClick={() => void load()} disabled={loading || savingUser !== null}>
+        <Button variant="secondary" onClick={() => void load()} disabled={loading || savingUser !== null || !guildId}>
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
       {error && <p role="alert" className="mb-3 text-sm text-bad">{error}</p>}
+      {bridgeUnconfigured && <p className="mb-3 text-sm text-base-400">The bot bridge is not configured, so member XP cannot be loaded or changed yet.</p>}
       {!loading && !guildId && <p className="text-sm text-base-500">Select a Discord server to manage member XP.</p>}
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
-      {!loading && users && users.length === 0 && <p className="text-sm text-base-500">No members found.</p>}
-      {users && users.length > 0 && (
+      {!loading && guildId && !bridgeUnconfigured && !error && users && users.length === 0 && <p className="text-sm text-base-500">No members found.</p>}
+      {!loading && guildId && !bridgeUnconfigured && users && users.length > 0 && (
         <div className="overflow-x-auto">
           <div className="min-w-[520px] space-y-1.5">
             {users.map((u) => (
