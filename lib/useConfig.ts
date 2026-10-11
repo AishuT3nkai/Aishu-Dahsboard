@@ -76,10 +76,13 @@ export function useConfig<T>(endpoint: string): UseConfigResult<T> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft),
       });
-      const body = await res.json();
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (body.code === "BRIDGE_NOT_CONFIGURED") setBridgeUnconfigured(true);
         throw new Error(body.error ?? "Failed to save.");
+      }
+      if (!Object.prototype.hasOwnProperty.call(body, "data")) {
+        throw new Error("The save response was invalid. Please reload and try again.");
       }
       setData(body.data);
       setDraft(body.data);
