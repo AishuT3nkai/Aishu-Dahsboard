@@ -24,6 +24,10 @@ export default function WelcomePage() {
         title="Welcome & goodbye"
         description="Configure welcome and goodbye messages here or with the bot’s /welcome and /goodbye commands. Auto role has its own page."
       />
+      <Card
+        title="Message templates are not live yet"
+        description="The bot currently sends its built-in welcome and goodbye text. Channel and enabled settings are used by the bot, but custom messages saved here are stored without being applied to live messages."
+      />
       <SaveBar
         dirty={dirty}
         saving={saving}

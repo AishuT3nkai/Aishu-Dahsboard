@@ -16,6 +16,10 @@ export default function TicketsPage() {
         title="Tickets"
         description="Configuration for the ticket panel. Members still open, close, claim, rename and add/remove people from tickets with the existing /ticket commands — only setup/panel configuration moved here."
       />
+      <Card
+        title="Partial runtime support"
+        description="The bot uses the category and support role configured here. The naming pattern and opening message are currently stored but not applied; new tickets still use the bot's built-in channel name and welcome text."
+      />
       <SaveBar
         dirty={dirty}
         saving={saving}
