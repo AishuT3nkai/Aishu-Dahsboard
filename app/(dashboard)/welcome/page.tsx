@@ -56,8 +56,8 @@ function fill(template: string, memberCount: number) {
 
 
 const DESIGN_STORAGE_KEY = "aishu-welcome-design-v1";
-const MAX_DESIGN_FILE_BYTES = 2 * 1024 * 1024;
-const MAX_BACKGROUND_DATA_LENGTH = 1_900_000;
+const MAX_DESIGN_FILE_BYTES = 3 * 1024 * 1024;
+const MAX_BACKGROUND_DATA_LENGTH = 2_150_000;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 function isTextLayer(value: unknown): value is TextLayer {
@@ -179,7 +179,7 @@ export default function WelcomePage() {
   async function importDesign(file: File) {
     setDesignImportError("");
     if (file.size > MAX_DESIGN_FILE_BYTES) {
-      setDesignImportError("File JSON terlalu besar. Batas impor 2 MB.");
+      setDesignImportError("File JSON terlalu besar. Batas impor 3 MB.");
       return;
     }
     try {
@@ -339,7 +339,7 @@ export default function WelcomePage() {
                     </FieldGroup>
                     <input ref={backgroundInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) readImage(file, setBackground); event.currentTarget.value = ""; }} />
                     <Button type="button" variant="secondary" className="w-full" onClick={() => backgroundInput.current?.click()}><ImagePlus size={15} className="mr-2 inline" />Upload background image</Button>
-                    <p className="text-xs text-base-500">Image files up to 1.5 MB. JSON import is limited to 2 MB and validates the design schema. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>
+                    <p className="text-xs text-base-500">Image files up to 1.5 MB. JSON import is limited to 3 MB and validates the design schema. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>
                     {designSaveError && <p role="status" className="text-xs text-warn">This browser could not save the design draft. Storage may be unavailable or full.</p>}
                     {background && <Button type="button" variant="secondary" className="w-full" onClick={() => setBackground("")}>Remove background image</Button>}
                   </div>
