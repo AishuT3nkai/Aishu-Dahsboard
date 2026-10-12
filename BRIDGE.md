@@ -53,6 +53,8 @@ All paths are relative to `BOT_API_BASE_URL`.
 
 Canonical dashboard response types are in `lib/types.ts`; route schemas should remain consistent with those types and the actual bot response payloads. Configuration persistence does not by itself prove a feature's runtime behavior is active.
 
+**Known leveling runtime gap:** the current bot `cogs/economy.py` awards XP using hard-coded rules (5–10 XP, a 60-second cooldown, a daily cap, and a fixed level-up announcement). It does not consume the dashboard's stored leveling configuration or grant the configured level-reward roles. The dashboard can currently persist and edit settings/XP, but these settings must not be described as controlling live XP behavior or rewards until the bot runtime is integrated and tested. The bot repository was inspected read-only; this dashboard PR does not change it.
+
 ## Missing endpoints required for planned dashboard features
 
 ### Channel and role lookup
