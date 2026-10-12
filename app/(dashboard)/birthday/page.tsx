@@ -16,6 +16,10 @@ export default function BirthdayPage() {
         title="Birthday"
         description="Members manage their own birthday with /birthday set/view/remove — only month and day are stored."
       />
+      <Card
+        title="Announcement controls are not fully live"
+        description="The bot currently announces birthdays whenever a birthday channel is configured. The enabled toggle and custom announcement format are saved, but the current bot runtime does not apply them yet. Do not rely on the toggle to disable announcements."
+      />
       <SaveBar
         dirty={dirty}
         saving={saving}
