@@ -17,7 +17,17 @@ import { SaveBar } from "@/components/SaveBar";
 import { Badge, Button, Card, FieldGroup, TextInput, TextArea, Toggle } from "@/components/ui";
 import type { WelcomeGoodbyeConfig } from "@/lib/types";
 
-type WelcomeDesign = {\n  layers: TextLayer[];\n  background: string;\n  backgroundColor: string;\n  accentColor: string;\n  serverName: string;\n  previewMemberCount: number;\n  avatarInitial: string;\n};\n\ntype TextLayer = {
+type WelcomeDesign = {
+  layers: TextLayer[];
+  background: string;
+  backgroundColor: string;
+  accentColor: string;
+  serverName: string;
+  previewMemberCount: number;
+  avatarInitial: string;
+};
+
+type TextLayer = {
   id: string;
   name: string;
   text: string;
@@ -61,16 +71,62 @@ export default function WelcomePage() {
   const [selectedId, setSelectedId] = useState("title");
   const [background, setBackground] = useState("");
   const [backgroundColor, setBackgroundColor] = useState("#17152d");
-  const [accentColor, setAccentColor] = useState("#8b5cf6");\n  const [serverName, setServerName] = useState("Aishu Community");\n  const [previewMemberCount, setPreviewMemberCount] = useState(128);\n  const [avatarInitial, setAvatarInitial] = useState("N");
-  const [tab, setTab] = useState<"design" | "message" | "goodbye">("design");\n  const [designHydrated, setDesignHydrated] = useState(false);\n  const [designSaveError, setDesignSaveError] = useState(false);
+  const [accentColor, setAccentColor] = useState("#8b5cf6");
+  const [serverName, setServerName] = useState("Aishu Community");
+  const [previewMemberCount, setPreviewMemberCount] = useState(128);
+  const [avatarInitial, setAvatarInitial] = useState("N");
+  const [tab, setTab] = useState<"design" | "message" | "goodbye">("design");
+  const [designHydrated, setDesignHydrated] = useState(false);
+  const [designSaveError, setDesignSaveError] = useState(false);
   const backgroundInput = useRef<HTMLInputElement>(null);
-  const selectedLayer = layers.find((layer) => layer.id === selectedId);\n\n  useEffect(() => {\n    try {\n      const saved = window.localStorage.getItem("aishu-welcome-design-v1");\n      if (saved) {\n        const parsed = JSON.parse(saved) as Partial<WelcomeDesign>;\n        if (Array.isArray(parsed.layers) && parsed.layers.every((layer) =>\n          typeof layer.id === "string" && typeof layer.text === "string" &&\n          Number.isFinite(layer.x) && Number.isFinite(layer.y) &&\n          /^#[0-9a-fA-F]{6}$/.test(layer.color) && Number.isFinite(layer.size)\n        )) setLayers(parsed.layers);\n        if (typeof parsed.background === "string" && parsed.background.startsWith("data:image/")) setBackground(parsed.background);\n        if (typeof parsed.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)) setBackgroundColor(parsed.backgroundColor);\n        if (typeof parsed.accentColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)) setAccentColor(parsed.accentColor);\n        if (typeof parsed.serverName === "string") setServerName(parsed.serverName.slice(0, 64));\n        if (typeof parsed.previewMemberCount === "number" && Number.isInteger(parsed.previewMemberCount)) setPreviewMemberCount(Math.max(1, Math.min(999999999, parsed.previewMemberCount)));\n        if (typeof parsed.avatarInitial === "string") setAvatarInitial(parsed.avatarInitial.slice(0, 2));\n      }\n    } catch {\n      setDesignSaveError(true);\n    } finally {\n      setDesignHydrated(true);\n    }\n  }, []);\n\n  useEffect(() => {\n    if (!designHydrated) return;\n    try {\n      const design: WelcomeDesign = { layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial };\n      window.localStorage.setItem("aishu-welcome-design-v1", JSON.stringify(design));\n      setDesignSaveError(false);\n    } catch {\n      setDesignSaveError(true);\n    }\n  }, [layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial, designHydrated]);
+  const selectedLayer = layers.find((layer) => layer.id === selectedId);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("aishu-welcome-design-v1");
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<WelcomeDesign>;
+        if (Array.isArray(parsed.layers) && parsed.layers.every((layer) =>
+          typeof layer.id === "string" && typeof layer.text === "string" &&
+          Number.isFinite(layer.x) && Number.isFinite(layer.y) &&
+          /^#[0-9a-fA-F]{6}$/.test(layer.color) && Number.isFinite(layer.size)
+        )) setLayers(parsed.layers);
+        if (typeof parsed.background === "string" && parsed.background.startsWith("data:image/")) setBackground(parsed.background);
+        if (typeof parsed.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)) setBackgroundColor(parsed.backgroundColor);
+        if (typeof parsed.accentColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)) setAccentColor(parsed.accentColor);
+        if (typeof parsed.serverName === "string") setServerName(parsed.serverName.slice(0, 64));
+        if (typeof parsed.previewMemberCount === "number" && Number.isInteger(parsed.previewMemberCount)) setPreviewMemberCount(Math.max(1, Math.min(999999999, parsed.previewMemberCount)));
+        if (typeof parsed.avatarInitial === "string") setAvatarInitial(parsed.avatarInitial.slice(0, 2));
+      }
+    } catch {
+      setDesignSaveError(true);
+    } finally {
+      setDesignHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!designHydrated) return;
+    try {
+      const design: WelcomeDesign = { layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial };
+      window.localStorage.setItem("aishu-welcome-design-v1", JSON.stringify(design));
+      setDesignSaveError(false);
+    } catch {
+      setDesignSaveError(true);
+    }
+  }, [layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial, designHydrated]);
 
   function updateLayer(id: string, patch: Partial<TextLayer>) {
     setLayers((current) => current.map((layer) => layer.id === id ? { ...layer, ...patch } : layer));
   }
 
-  function removeLayer(id: string) {\n    const remaining = layers.filter((layer) => layer.id !== id);\n    setLayers(remaining);\n    if (selectedId === id) setSelectedId(remaining[0]?.id ?? "");\n  }\n\n  function addLayer() {
+  function removeLayer(id: string) {
+    const remaining = layers.filter((layer) => layer.id !== id);
+    setLayers(remaining);
+    if (selectedId === id) setSelectedId(remaining[0]?.id ?? "");
+  }
+
+  function addLayer() {
     const id = `text-${Date.now()}`;
     setLayers((current) => [...current, {
       id, name: `Text layer ${current.length + 1}`, text: "Your text here",
@@ -194,7 +250,8 @@ export default function WelcomePage() {
                     </FieldGroup>
                     <input ref={backgroundInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) readImage(file, setBackground); event.currentTarget.value = ""; }} />
                     <Button type="button" variant="secondary" className="w-full" onClick={() => backgroundInput.current?.click()}><ImagePlus size={15} className="mr-2 inline" />Upload background image</Button>
-                    <p className="text-xs text-base-500">Image files up to 1.5 MB. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>\n                    {designSaveError && <p role="status" className="text-xs text-warn">This browser could not save the design draft. Storage may be unavailable or full.</p>}
+                    <p className="text-xs text-base-500">Image files up to 1.5 MB. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>
+                    {designSaveError && <p role="status" className="text-xs text-warn">This browser could not save the design draft. Storage may be unavailable or full.</p>}
                     {background && <Button type="button" variant="secondary" className="w-full" onClick={() => setBackground("")}>Remove background image</Button>}
                   </div>
                 </Card>
