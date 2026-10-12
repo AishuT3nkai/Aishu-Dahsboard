@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -17,7 +17,7 @@ import { SaveBar } from "@/components/SaveBar";
 import { Badge, Button, Card, FieldGroup, TextInput, TextArea, Toggle } from "@/components/ui";
 import type { WelcomeGoodbyeConfig } from "@/lib/types";
 
-type TextLayer = {
+type WelcomeDesign = {\n  layers: TextLayer[];\n  background: string;\n  backgroundColor: string;\n  accentColor: string;\n};\n\ntype TextLayer = {
   id: string;
   name: string;
   text: string;
@@ -46,7 +46,7 @@ function fill(template: string, memberCount: number) {
 
 function readImage(file: File, onRead: (value: string) => void) {
   if (!file.type.startsWith("image/")) return;
-  if (file.size > 5 * 1024 * 1024) return;
+  if (file.size > 1.5 * 1024 * 1024) return;
   const reader = new FileReader();
   reader.onload = () => {
     if (typeof reader.result === "string") onRead(reader.result);
@@ -62,15 +62,15 @@ export default function WelcomePage() {
   const [background, setBackground] = useState("");
   const [backgroundColor, setBackgroundColor] = useState("#17152d");
   const [accentColor, setAccentColor] = useState("#8b5cf6");
-  const [tab, setTab] = useState<"design" | "message" | "goodbye">("design");
+  const [tab, setTab] = useState<"design" | "message" | "goodbye">("design");\n  const [designHydrated, setDesignHydrated] = useState(false);\n  const [designSaveError, setDesignSaveError] = useState(false);
   const backgroundInput = useRef<HTMLInputElement>(null);
-  const selectedLayer = layers.find((layer) => layer.id === selectedId) ?? layers[0];
+  const selectedLayer = layers.find((layer) => layer.id === selectedId);\n\n  useEffect(() => {\n    try {\n      const saved = window.localStorage.getItem("aishu-welcome-design-v1");\n      if (saved) {\n        const parsed = JSON.parse(saved) as Partial<WelcomeDesign>;\n        if (Array.isArray(parsed.layers) && parsed.layers.every((layer) =>\n          typeof layer.id === "string" && typeof layer.text === "string" &&\n          Number.isFinite(layer.x) && Number.isFinite(layer.y) &&\n          /^#[0-9a-fA-F]{6}$/.test(layer.color) && Number.isFinite(layer.size)\n        )) setLayers(parsed.layers);\n        if (typeof parsed.background === "string" && parsed.background.startsWith("data:image/")) setBackground(parsed.background);\n        if (typeof parsed.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)) setBackgroundColor(parsed.backgroundColor);\n        if (typeof parsed.accentColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)) setAccentColor(parsed.accentColor);\n      }\n    } catch {\n      setDesignSaveError(true);\n    } finally {\n      setDesignHydrated(true);\n    }\n  }, []);\n\n  useEffect(() => {\n    if (!designHydrated) return;\n    try {\n      const design: WelcomeDesign = { layers, background, backgroundColor, accentColor };\n      window.localStorage.setItem("aishu-welcome-design-v1", JSON.stringify(design));\n      setDesignSaveError(false);\n    } catch {\n      setDesignSaveError(true);\n    }\n  }, [layers, background, backgroundColor, accentColor, designHydrated]);
 
   function updateLayer(id: string, patch: Partial<TextLayer>) {
     setLayers((current) => current.map((layer) => layer.id === id ? { ...layer, ...patch } : layer));
   }
 
-  function addLayer() {
+  function removeLayer(id: string) {\n    const remaining = layers.filter((layer) => layer.id !== id);\n    setLayers(remaining);\n    if (selectedId === id) setSelectedId(remaining[0]?.id ?? "");\n  }\n\n  function addLayer() {
     const id = `text-${Date.now()}`;
     setLayers((current) => [...current, {
       id, name: `Text layer ${current.length + 1}`, text: "Your text here",
@@ -194,7 +194,7 @@ export default function WelcomePage() {
                     </FieldGroup>
                     <input ref={backgroundInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) readImage(file, setBackground); event.currentTarget.value = ""; }} />
                     <Button type="button" variant="secondary" className="w-full" onClick={() => backgroundInput.current?.click()}><ImagePlus size={15} className="mr-2 inline" />Upload background image</Button>
-                    <p className="text-xs text-base-500">Image files up to 5 MB. The image stays in this page session and is not uploaded to the server.</p>
+                    <p className="text-xs text-base-500">Image files up to 1.5 MB. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>\n                    {designSaveError && <p role="status" className="text-xs text-warn">This browser could not save the design draft. Storage may be unavailable or full.</p>}
                     {background && <Button type="button" variant="secondary" className="w-full" onClick={() => setBackground("")}>Remove background image</Button>}
                   </div>
                 </Card>
@@ -207,7 +207,7 @@ export default function WelcomePage() {
                           <span className="block truncate text-sm font-medium text-base-100">{layer.name}</span>
                           <span className="block truncate text-xs text-base-500">{layer.text}</span>
                         </button>
-                        <button type="button" onClick={() => { setLayers((current) => current.filter((item) => item.id !== layer.id)); if (selectedId === layer.id) setSelectedId(layers.find((item) => item.id !== layer.id)?.id ?? ""); }} className="rounded p-2 text-base-500 hover:bg-base-800 hover:text-bad" aria-label={`Delete ${layer.name}`}><Trash2 size={15} /></button>
+                        <button type="button" onClick={() => removeLayer(layer.id)} className="rounded p-2 text-base-500 hover:bg-base-800 hover:text-bad" aria-label={`Delete ${layer.name}`}><Trash2 size={15} /></button>
                       </div>
                     ))}
                     <Button type="button" variant="secondary" className="w-full" onClick={addLayer}><Plus size={15} className="mr-2 inline" />Add text layer</Button>
