@@ -17,7 +17,7 @@ import { SaveBar } from "@/components/SaveBar";
 import { Badge, Button, Card, FieldGroup, TextInput, TextArea, Toggle } from "@/components/ui";
 import type { WelcomeGoodbyeConfig } from "@/lib/types";
 
-type WelcomeDesign = {\n  layers: TextLayer[];\n  background: string;\n  backgroundColor: string;\n  accentColor: string;\n};\n\ntype TextLayer = {
+type WelcomeDesign = {\n  layers: TextLayer[];\n  background: string;\n  backgroundColor: string;\n  accentColor: string;\n  serverName: string;\n  previewMemberCount: number;\n  avatarInitial: string;\n};\n\ntype TextLayer = {
   id: string;
   name: string;
   text: string;
@@ -61,10 +61,10 @@ export default function WelcomePage() {
   const [selectedId, setSelectedId] = useState("title");
   const [background, setBackground] = useState("");
   const [backgroundColor, setBackgroundColor] = useState("#17152d");
-  const [accentColor, setAccentColor] = useState("#8b5cf6");
+  const [accentColor, setAccentColor] = useState("#8b5cf6");\n  const [serverName, setServerName] = useState("Aishu Community");\n  const [previewMemberCount, setPreviewMemberCount] = useState(128);\n  const [avatarInitial, setAvatarInitial] = useState("N");
   const [tab, setTab] = useState<"design" | "message" | "goodbye">("design");\n  const [designHydrated, setDesignHydrated] = useState(false);\n  const [designSaveError, setDesignSaveError] = useState(false);
   const backgroundInput = useRef<HTMLInputElement>(null);
-  const selectedLayer = layers.find((layer) => layer.id === selectedId);\n\n  useEffect(() => {\n    try {\n      const saved = window.localStorage.getItem("aishu-welcome-design-v1");\n      if (saved) {\n        const parsed = JSON.parse(saved) as Partial<WelcomeDesign>;\n        if (Array.isArray(parsed.layers) && parsed.layers.every((layer) =>\n          typeof layer.id === "string" && typeof layer.text === "string" &&\n          Number.isFinite(layer.x) && Number.isFinite(layer.y) &&\n          /^#[0-9a-fA-F]{6}$/.test(layer.color) && Number.isFinite(layer.size)\n        )) setLayers(parsed.layers);\n        if (typeof parsed.background === "string" && parsed.background.startsWith("data:image/")) setBackground(parsed.background);\n        if (typeof parsed.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)) setBackgroundColor(parsed.backgroundColor);\n        if (typeof parsed.accentColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)) setAccentColor(parsed.accentColor);\n      }\n    } catch {\n      setDesignSaveError(true);\n    } finally {\n      setDesignHydrated(true);\n    }\n  }, []);\n\n  useEffect(() => {\n    if (!designHydrated) return;\n    try {\n      const design: WelcomeDesign = { layers, background, backgroundColor, accentColor };\n      window.localStorage.setItem("aishu-welcome-design-v1", JSON.stringify(design));\n      setDesignSaveError(false);\n    } catch {\n      setDesignSaveError(true);\n    }\n  }, [layers, background, backgroundColor, accentColor, designHydrated]);
+  const selectedLayer = layers.find((layer) => layer.id === selectedId);\n\n  useEffect(() => {\n    try {\n      const saved = window.localStorage.getItem("aishu-welcome-design-v1");\n      if (saved) {\n        const parsed = JSON.parse(saved) as Partial<WelcomeDesign>;\n        if (Array.isArray(parsed.layers) && parsed.layers.every((layer) =>\n          typeof layer.id === "string" && typeof layer.text === "string" &&\n          Number.isFinite(layer.x) && Number.isFinite(layer.y) &&\n          /^#[0-9a-fA-F]{6}$/.test(layer.color) && Number.isFinite(layer.size)\n        )) setLayers(parsed.layers);\n        if (typeof parsed.background === "string" && parsed.background.startsWith("data:image/")) setBackground(parsed.background);\n        if (typeof parsed.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)) setBackgroundColor(parsed.backgroundColor);\n        if (typeof parsed.accentColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)) setAccentColor(parsed.accentColor);\n        if (typeof parsed.serverName === "string") setServerName(parsed.serverName.slice(0, 64));\n        if (typeof parsed.previewMemberCount === "number" && Number.isInteger(parsed.previewMemberCount)) setPreviewMemberCount(Math.max(1, Math.min(999999999, parsed.previewMemberCount)));\n        if (typeof parsed.avatarInitial === "string") setAvatarInitial(parsed.avatarInitial.slice(0, 2));\n      }\n    } catch {\n      setDesignSaveError(true);\n    } finally {\n      setDesignHydrated(true);\n    }\n  }, []);\n\n  useEffect(() => {\n    if (!designHydrated) return;\n    try {\n      const design: WelcomeDesign = { layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial };\n      window.localStorage.setItem("aishu-welcome-design-v1", JSON.stringify(design));\n      setDesignSaveError(false);\n    } catch {\n      setDesignSaveError(true);\n    }\n  }, [layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial, designHydrated]);
 
   function updateLayer(id: string, patch: Partial<TextLayer>) {
     setLayers((current) => current.map((layer) => layer.id === id ? { ...layer, ...patch } : layer));
@@ -127,7 +127,7 @@ export default function WelcomePage() {
 
           {tab === "design" && (
             <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.8fr)]">
-              <Card title="Live canvas" description="Preview only · sample member data · card ratio 16:9">
+              <Card title="Live canvas" description={`Preview only · sample member #${previewMemberCount} · card ratio 16:9`}>
                 <div className="overflow-hidden rounded-xl border border-base-700 bg-base-950 p-2 sm:p-4">
                   <div
                     className="relative mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-lg border border-white/10"
@@ -142,7 +142,7 @@ export default function WelcomePage() {
                     <div className="absolute inset-0 bg-black/10" />
                     <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/15 bg-black/25 px-2 py-1 backdrop-blur-sm sm:left-5 sm:top-5 sm:px-3">
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accentColor }} />
-                      <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/80 sm:text-[10px]">Aishu Community</span>
+                      <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/80 sm:text-[10px]">{serverName || "Your server"}</span>
                     </div>
                     <div className="absolute left-1/2 top-[58%] flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 text-lg font-bold text-white shadow-xl sm:h-16 sm:w-16 sm:text-2xl" style={{ backgroundColor: accentColor }}>
                       N
