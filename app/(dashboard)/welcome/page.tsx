@@ -54,6 +54,52 @@ function fill(template: string, memberCount: number) {
     .replaceAll("{member_count}", String(memberCount));
 }
 
+
+const DESIGN_STORAGE_KEY = "aishu-welcome-design-v1";
+const MAX_DESIGN_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_BACKGROUND_DATA_LENGTH = 1_900_000;
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+function isTextLayer(value: unknown): value is TextLayer {
+  if (!value || typeof value !== "object") return false;
+  const layer = value as Partial<TextLayer>;
+  return typeof layer.id === "string" && /^[a-zA-Z0-9_-]{1,64}$/.test(layer.id) &&
+    typeof layer.name === "string" && layer.name.length <= 60 &&
+    typeof layer.text === "string" && layer.text.length <= 120 &&
+    typeof layer.x === "number" && Number.isFinite(layer.x) && layer.x >= 5 && layer.x <= 95 &&
+    typeof layer.y === "number" && Number.isFinite(layer.y) && layer.y >= 8 && layer.y <= 92 &&
+    typeof layer.color === "string" && HEX_COLOR.test(layer.color) &&
+    typeof layer.size === "number" && Number.isInteger(layer.size) && layer.size >= 8 && layer.size <= 48 &&
+    (layer.weight === "normal" || layer.weight === "bold") &&
+    (layer.align === "left" || layer.align === "center");
+}
+
+function validateWelcomeDesign(value: unknown): WelcomeDesign | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const design = value as Partial<WelcomeDesign>;
+  if (!Array.isArray(design.layers) || design.layers.length > 30 ||
+      !design.layers.every(isTextLayer) ||
+      new Set(design.layers.map((layer) => layer.id)).size !== design.layers.length) return null;
+  if (typeof design.background !== "string" ||
+      (design.background !== "" && (!/^data:image\/(png|jpeg|webp|gif);base64,[a-zA-Z0-9+/=]+$/.test(design.background) ||
+        design.background.length > MAX_BACKGROUND_DATA_LENGTH))) return null;
+  if (typeof design.backgroundColor !== "string" || !HEX_COLOR.test(design.backgroundColor) ||
+      typeof design.accentColor !== "string" || !HEX_COLOR.test(design.accentColor)) return null;
+  if (typeof design.serverName !== "string" || design.serverName.length > 64 ||
+      typeof design.previewMemberCount !== "number" || !Number.isInteger(design.previewMemberCount) ||
+      design.previewMemberCount < 1 || design.previewMemberCount > 999999999 ||
+      typeof design.avatarInitial !== "string" || design.avatarInitial.length > 2) return null;
+  return {
+    layers: design.layers,
+    background: design.background,
+    backgroundColor: design.backgroundColor,
+    accentColor: design.accentColor,
+    serverName: design.serverName,
+    previewMemberCount: design.previewMemberCount,
+    avatarInitial: design.avatarInitial,
+  };
+}
+
 function readImage(file: File, onRead: (value: string) => void) {
   if (!file.type.startsWith("image/")) return;
   if (file.size > 1.5 * 1024 * 1024) return;
@@ -78,25 +124,27 @@ export default function WelcomePage() {
   const [tab, setTab] = useState<"design" | "message" | "goodbye">("design");
   const [designHydrated, setDesignHydrated] = useState(false);
   const [designSaveError, setDesignSaveError] = useState(false);
+  const [designImportError, setDesignImportError] = useState("");
+  const designImportInput = useRef<HTMLInputElement>(null);
   const backgroundInput = useRef<HTMLInputElement>(null);
   const selectedLayer = layers.find((layer) => layer.id === selectedId);
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("aishu-welcome-design-v1");
+      const saved = window.localStorage.getItem(DESIGN_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as Partial<WelcomeDesign>;
-        if (Array.isArray(parsed.layers) && parsed.layers.every((layer) =>
-          typeof layer.id === "string" && typeof layer.text === "string" &&
-          Number.isFinite(layer.x) && Number.isFinite(layer.y) &&
-          /^#[0-9a-fA-F]{6}$/.test(layer.color) && Number.isFinite(layer.size)
-        )) setLayers(parsed.layers);
-        if (typeof parsed.background === "string" && parsed.background.startsWith("data:image/")) setBackground(parsed.background);
-        if (typeof parsed.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor)) setBackgroundColor(parsed.backgroundColor);
-        if (typeof parsed.accentColor === "string" && /^#[0-9a-fA-F]{6}$/.test(parsed.accentColor)) setAccentColor(parsed.accentColor);
-        if (typeof parsed.serverName === "string") setServerName(parsed.serverName.slice(0, 64));
-        if (typeof parsed.previewMemberCount === "number" && Number.isInteger(parsed.previewMemberCount)) setPreviewMemberCount(Math.max(1, Math.min(999999999, parsed.previewMemberCount)));
-        if (typeof parsed.avatarInitial === "string") setAvatarInitial(parsed.avatarInitial.slice(0, 2));
+        const validated = validateWelcomeDesign(JSON.parse(saved));
+        if (validated) {
+          setLayers(validated.layers);
+          setBackground(validated.background);
+          setBackgroundColor(validated.backgroundColor);
+          setAccentColor(validated.accentColor);
+          setServerName(validated.serverName);
+          setPreviewMemberCount(validated.previewMemberCount);
+          setAvatarInitial(validated.avatarInitial);
+        } else {
+          setDesignSaveError(true);
+        }
       }
     } catch {
       setDesignSaveError(true);
@@ -109,12 +157,49 @@ export default function WelcomePage() {
     if (!designHydrated) return;
     try {
       const design: WelcomeDesign = { layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial };
-      window.localStorage.setItem("aishu-welcome-design-v1", JSON.stringify(design));
+      window.localStorage.setItem(DESIGN_STORAGE_KEY, JSON.stringify(design));
       setDesignSaveError(false);
     } catch {
       setDesignSaveError(true);
     }
   }, [layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial, designHydrated]);
+
+
+  function exportDesign() {
+    const design: WelcomeDesign = { layers, background, backgroundColor, accentColor, serverName, previewMemberCount, avatarInitial };
+    const blob = new Blob([JSON.stringify({ version: 1, design }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "aishu-welcome-design.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importDesign(file: File) {
+    setDesignImportError("");
+    if (file.size > MAX_DESIGN_FILE_BYTES) {
+      setDesignImportError("File JSON terlalu besar. Batas impor 2 MB.");
+      return;
+    }
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Format JSON tidak valid.");
+      const payload = parsed as { version?: unknown; design?: unknown };
+      const validated = validateWelcomeDesign(payload.version === 1 ? payload.design : parsed);
+      if (!validated) throw new Error("Skema desain tidak valid. Periksa layer, warna, posisi, dan gambar.");
+      setLayers(validated.layers);
+      setSelectedId(validated.layers[0]?.id ?? "");
+      setBackground(validated.background);
+      setBackgroundColor(validated.backgroundColor);
+      setAccentColor(validated.accentColor);
+      setServerName(validated.serverName);
+      setPreviewMemberCount(validated.previewMemberCount);
+      setAvatarInitial(validated.avatarInitial);
+    } catch (error) {
+      setDesignImportError(error instanceof Error ? error.message : "Gagal membaca file JSON.");
+    }
+  }
 
   function updateLayer(id: string, patch: Partial<TextLayer>) {
     setLayers((current) => current.map((layer) => layer.id === id ? { ...layer, ...patch } : layer));
@@ -141,6 +226,10 @@ export default function WelcomePage() {
     setBackground("");
     setBackgroundColor("#17152d");
     setAccentColor("#8b5cf6");
+    setServerName("Aishu Community");
+    setPreviewMemberCount(128);
+    setAvatarInitial("N");
+    setDesignImportError("");
   }
 
   return (
@@ -201,7 +290,7 @@ export default function WelcomePage() {
                       <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/80 sm:text-[10px]">{serverName || "Your server"}</span>
                     </div>
                     <div className="absolute left-1/2 top-[58%] flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 text-lg font-bold text-white shadow-xl sm:h-16 sm:w-16 sm:text-2xl" style={{ backgroundColor: accentColor }}>
-                      N
+                      {avatarInitial || "N"}
                     </div>
                     {layers.map((layer) => (
                       <button
@@ -250,7 +339,7 @@ export default function WelcomePage() {
                     </FieldGroup>
                     <input ref={backgroundInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) readImage(file, setBackground); event.currentTarget.value = ""; }} />
                     <Button type="button" variant="secondary" className="w-full" onClick={() => backgroundInput.current?.click()}><ImagePlus size={15} className="mr-2 inline" />Upload background image</Button>
-                    <p className="text-xs text-base-500">Image files up to 1.5 MB. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>
+                    <p className="text-xs text-base-500">Image files up to 1.5 MB. JSON import is limited to 2 MB and validates the design schema. Design settings are saved only in this browser; they are not uploaded to the dashboard server or Discord.</p>
                     {designSaveError && <p role="status" className="text-xs text-warn">This browser could not save the design draft. Storage may be unavailable or full.</p>}
                     {background && <Button type="button" variant="secondary" className="w-full" onClick={() => setBackground("")}>Remove background image</Button>}
                   </div>
