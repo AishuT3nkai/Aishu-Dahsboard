@@ -86,7 +86,7 @@ function RewardsPanel() {
   }
 
   return (
-    <Card title="Level rewards" description="Roles granted automatically when a member reaches a level.">
+    <Card title="Level rewards" description="Configure intended rewards. Automatic role grants are not active until bot runtime integration is completed.">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         {error && <p role="alert" className="text-sm text-bad">{error}</p>}
         <Button variant="secondary" onClick={() => void load()} disabled={loading || saving || !guildId}>
@@ -312,6 +312,10 @@ export default function LevelingPage() {
       <PageHeader
         title="Leveling"
         description="XP is per-guild — a member's level on this server never carries over to another."
+      />
+      <Card
+        title="Runtime integration is incomplete"
+        description="This page can save leveling settings and edit stored XP, but the bot currently uses fixed XP rules. The XP range, cooldown, multiplier, level-up channel/message, anti-spam toggle, and reward roles configured here do not yet control live bot behavior. Level-reward roles are not automatically granted yet. These controls will only become live after the bot runtime is integrated and verified."
       />
       <SaveBar
         dirty={dirty}
