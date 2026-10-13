@@ -13,6 +13,8 @@ function WarningsPanel() {
   const [warnings, setWarnings] = useState<WarningEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const load = useCallback(async () => {
     if (!guildId) {
@@ -43,8 +45,25 @@ function WarningsPanel() {
     void load();
   }, [load]);
 
+  const filteredWarnings = (warnings ?? [])
+    .filter((warning) => {
+      const query = search.trim().toLocaleLowerCase();
+      if (!query) return true;
+      return [warning.username, warning.userId, warning.moderatorId, warning.reason, warning.id]
+        .some((value) => value.toLocaleLowerCase().includes(query));
+    })
+    .sort((a, b) => {
+      const aTime = Date.parse(a.createdAt);
+      const bTime = Date.parse(b.createdAt);
+      const safeA = Number.isNaN(aTime) ? 0 : aTime;
+      const safeB = Number.isNaN(bTime) ? 0 : bTime;
+      return sortOrder === "newest" ? safeB - safeA : safeA - safeB;
+    });
+
   async function clear(warningId: string) {
     if (!guildId) return;
+    const selected = warnings?.find((warning) => warning.id === warningId);
+    if (!window.confirm(`Clear this warning for ${selected?.username ?? "this user"}? This cannot be undone.`)) return;
     setError(null);
     try {
       const params = new URLSearchParams({ guildId, warningId });
