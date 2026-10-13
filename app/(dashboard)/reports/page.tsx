@@ -15,6 +15,8 @@ function ReportsList() {
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("open");
 
   const load = useCallback(async () => {
     if (!guildId) {
@@ -48,8 +50,21 @@ function ReportsList() {
     void load();
   }, [load]);
 
+  const filteredItems = (items ?? []).filter((report) => {
+    const query = search.trim().toLocaleLowerCase();
+    const matchesSearch = !query || [report.username, report.userId, report.content, report.id]
+      .some((value) => value.toLocaleLowerCase().includes(query));
+    return matchesSearch && (statusFilter === "all" || report.status === statusFilter);
+  }).sort((a, b) => {
+    const aTime = Date.parse(a.createdAt);
+    const bTime = Date.parse(b.createdAt);
+    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+  });
+
   async function close(id: string) {
     if (!guildId) return;
+    const selected = items?.find((report) => report.id === id);
+    if (!window.confirm(`Mark the report from ${selected?.username ?? "this member"} as closed?`)) return;
     setError(null);
     setActionPending(id);
     try {
@@ -81,24 +96,47 @@ function ReportsList() {
       {loading && <div className="h-24 animate-pulse rounded-card bg-base-800" />}
       {!loading && guildId && !bridgeUnconfigured && !error && items && items.length === 0 && <p className="text-sm text-base-500">No reports yet.</p>}
       {!loading && guildId && !bridgeUnconfigured && items && items.length > 0 && (
-        <div className="space-y-2">
-          {items.map((r) => (
-            <div key={r.id} className="rounded-card border border-base-800 bg-base-950 p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-base-100">{r.username}</span>
-                <Badge tone={r.status === "open" ? "warn" : "neutral"}>{r.status}</Badge>
-              </div>
-              <p className="text-sm text-base-300">{r.content}</p>
-              {r.status === "open" && (
-                <div className="mt-3">
-                  <Button variant="secondary" disabled={actionPending !== null} onClick={() => close(r.id)}>
-                    Mark closed
-                  </Button>
+        <>
+          <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
+            <FieldGroup label="Search reports" hint="Search reporter, user ID, report text, or report ID.">
+              <TextInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reports…" />
+            </FieldGroup>
+            <FieldGroup label="Status">
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | "open" | "closed")} className="focus-ring w-full rounded-card border border-base-700 bg-base-900 px-3 py-2 text-sm text-base-100">
+                <option value="open">Open only</option>
+                <option value="closed">Closed only</option>
+                <option value="all">All reports</option>
+              </select>
+            </FieldGroup>
+          </div>
+          <p className="mb-3 text-xs text-base-500">Showing {filteredItems.length} of {items.length} report{items.length === 1 ? "" : "s"} · newest first</p>
+          {filteredItems.length === 0 ? (
+            <p className="text-sm text-base-500">No reports match these filters.</p>
+          ) : (
+            <div className="space-y-2">
+              {filteredItems.map((r) => (
+                <div key={r.id} className="rounded-card border border-base-800 bg-base-950 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-base-100">{r.username}</span>
+                    <Badge tone={r.status === "open" ? "warn" : "neutral"}>{r.status}</Badge>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm text-base-300">{r.content}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-500">
+                    <span>{new Date(r.createdAt).toLocaleString()}</span>
+                    <span>User ID: {r.userId}</span>
+                  </div>
+                  {r.status === "open" && (
+                    <div className="mt-3">
+                      <Button variant="secondary" disabled={actionPending !== null} onClick={() => close(r.id)}>
+                        {actionPending === r.id ? "Closing…" : "Mark closed"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </Card>
   );
