@@ -18,10 +18,10 @@ export default function AutoModPage() {
 
 
   const testFindings = draft ? [
-    ...(draft.enabled && draft.links_enabled && /https?:\\/\\/|www\\./i.test(testMessage) ? ["Link detected"] : []),
-    ...(draft.enabled && draft.invites_enabled && /discord(?:app)?\\.com\\/invite\\/|discord\\.gg\\//i.test(testMessage) ? ["Discord invite detected"] : []),
+    ...(draft.enabled && draft.links_enabled && /https?:\/\/|www\./i.test(testMessage) ? ["Link detected"] : []),
+    ...(draft.enabled && draft.invites_enabled && /discord(?:app)?\.com\/invite\/|discord\.gg\//i.test(testMessage) ? ["Discord invite detected"] : []),
     ...(draft.enabled ? draft.keywords.filter((word) => word.trim() && testMessage.toLocaleLowerCase().includes(word.toLocaleLowerCase())).map((word) => `Blocked word: ${word}`) : []),
-    ...(draft.enabled && draft.mention_enabled && (testMessage.match(/<@!?\\d+>/g) ?? []).length > draft.max_mentions ? ["Mention limit exceeded"] : []),
+    ...(draft.enabled && draft.mention_enabled && (testMessage.match(/<@!?\d+>/g) ?? []).length > draft.max_mentions ? ["Mention limit exceeded"] : []),
   ] : [];
 
   return (
