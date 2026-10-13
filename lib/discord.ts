@@ -74,10 +74,11 @@ const manageableGuildCache = new Map<
 const manageableGuildRequests = new Map<string, Promise<DiscordGuildSummary[]>>();
 
 /**
- * Guilds the logged-in admin can manage in Discord (Manage Server or
- * Administrator). This is only used to build the candidate list for the
- * guild switcher — it is intersected server-side with the guilds the bot
- * itself reports via the bridge before anything is trusted as "in scope".
+ * Guilds the logged-in admin can manage in Discord (Manage Server,
+ * Administrator, or guild ownership). This is only used to build the
+ * candidate list for the guild switcher — it is intersected server-side
+ * with the guilds the bot itself reports via the bridge before anything is
+ * trusted as "in scope".
  */
 export async function fetchManageableGuilds(
   accessToken: string
@@ -101,14 +102,25 @@ export async function fetchManageableGuilds(
       id: string;
       name: string;
       icon: string | null;
+      owner?: boolean;
       permissions: string;
     }[];
 
     const manageable = guilds
       .filter((g) => {
-        const perms = BigInt(g.permissions);
-        return (perms & BigInt(MANAGE_GUILD)) !== BigInt(0) ||
-          (perms & BigInt(ADMINISTRATOR)) !== BigInt(0);
+        // Discord returns ownership separately from the permission bitfield.
+        // Owners always control their guild, so do not drop them if the
+        // bitfield lacks Manage Guild / Administrator flags.
+        if (g.owner === true) return true;
+
+        try {
+          const perms = BigInt(g.permissions);
+          return (perms & BigInt(MANAGE_GUILD)) !== BigInt(0) ||
+            (perms & BigInt(ADMINISTRATOR)) !== BigInt(0);
+        } catch {
+          // Ignore malformed permission data rather than granting access.
+          return false;
+        }
       })
       .map((g) => ({ id: g.id, name: g.name, icon: g.icon }));
 
