@@ -5,7 +5,7 @@ import { useConfig } from "@/lib/useConfig";
 import { useGuild } from "@/components/GuildProvider";
 import { PageHeader } from "@/components/PageHeader";
 import { SaveBar } from "@/components/SaveBar";
-import { Card, FieldGroup, TextInput, Button, Badge } from "@/components/ui";
+import { Card, FieldGroup, TextInput, TextArea, Button, Badge } from "@/components/ui";
 import type { SuggestionConfig, SuggestionEntry } from "@/lib/types";
 
 function statusTone(status: SuggestionEntry["status"]) {
@@ -24,6 +24,7 @@ function SuggestionsList() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | SuggestionEntry["status"]>("pending");
+  const [decisionNotes, setDecisionNotes] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!guildId) {
@@ -81,10 +82,11 @@ function SuggestionsList() {
       const res = await fetch(`/api/dashboard/suggestions/${encodeURIComponent(id)}/decide?guildId=${encodeURIComponent(guildId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify({ decision, note: decisionNotes[id]?.trim() || undefined }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? `Failed to ${decision} suggestion.`);
+      setDecisionNotes((current) => { const next = { ...current }; delete next[id]; return next; });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${decision} suggestion.`);
@@ -147,13 +149,18 @@ function SuggestionsList() {
                     <span>Suggestion ID: {s.id}</span>
                   </div>
                   {s.status === "pending" && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 space-y-2">
+                      <FieldGroup label="Decision note (optional)" hint="Up to 500 characters. Saved with the approval or denial.">
+                        <TextArea value={decisionNotes[s.id] ?? ""} maxLength={500} rows={2} onChange={(event) => setDecisionNotes((current) => ({ ...current, [s.id]: event.target.value }))} placeholder="Explain the decision for the review record…" />
+                      </FieldGroup>
+                      <div className="flex gap-2">
                       <Button variant="primary" disabled={actionPending !== null} onClick={() => decide(s.id, "approved")}>
                         {actionPending === s.id ? "Saving…" : "Approve"}
                       </Button>
                       <Button variant="danger" disabled={actionPending !== null} onClick={() => decide(s.id, "denied")}>
                         {actionPending === s.id ? "Saving…" : "Deny"}
                       </Button>
+                      </div>
                     </div>
                   )}
                 </div>
