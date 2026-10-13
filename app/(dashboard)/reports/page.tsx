@@ -15,8 +15,6 @@ function ReportsList() {
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("open");
@@ -52,17 +50,6 @@ function ReportsList() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const filteredItems = (items ?? []).filter((report) => {
-    const query = search.trim().toLocaleLowerCase();
-    const matchesSearch = !query || [report.username, report.userId, report.content, report.id]
-      .some((value) => value.toLocaleLowerCase().includes(query));
-    return matchesSearch && (statusFilter === "all" || report.status === statusFilter);
-  }).sort((a, b) => {
-    const aTime = Date.parse(a.createdAt);
-    const bTime = Date.parse(b.createdAt);
-    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
-  });
 
   const filteredItems = (items ?? [])
     .filter((report) => {
