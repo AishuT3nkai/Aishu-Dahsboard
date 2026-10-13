@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { useConfig } from "@/lib/useConfig";
 import { PageHeader } from "@/components/PageHeader";
 import { SaveBar } from "@/components/SaveBar";
@@ -7,11 +9,20 @@ import { Card, FieldGroup, TextInput, TextArea, Toggle } from "@/components/ui";
 import type { AutomodConfig } from "@/lib/types";
 
 export default function AutoModPage() {
+  const [testMessage, setTestMessage] = useState("");
   const { draft, setDraft, loading, saving, error, bridgeUnconfigured, dirty, save, data } =
     useConfig<AutomodConfig>("/api/dashboard/automod");
   const update = (patch: Partial<AutomodConfig>) => {
     if (draft) setDraft({ ...draft, ...patch });
   };
+
+
+  const testFindings = draft ? [
+    ...(draft.enabled && draft.links_enabled && /https?:\/\/|www\./i.test(testMessage) ? ["Link detected"] : []),
+    ...(draft.enabled && draft.invites_enabled && /discord(?:app)?\.com\/invite\/|discord\.gg\//i.test(testMessage) ? ["Discord invite detected"] : []),
+    ...(draft.enabled ? draft.keywords.filter((word) => word.trim() && testMessage.toLocaleLowerCase().includes(word.toLocaleLowerCase())).map((word) => `Blocked word: ${word}`) : []),
+    ...(draft.enabled && draft.mention_enabled && (testMessage.match(/<@!?\d+>/g) ?? []).length > draft.max_mentions ? ["Mention limit exceeded"] : []),
+  ] : [];
 
   return (
     <div>
@@ -48,6 +59,27 @@ export default function AutoModPage() {
               onChange={(e) => update({ keywords: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 100) })}
               placeholder={"word to block\nphrase to block"} />
           </FieldGroup>
+        </Card>
+        <Card title="Test a message" description="Try the current link, invite, keyword, and mention rules against sample text. This is a local preview, not a live Discord moderation test.">
+          <FieldGroup label="Sample message" hint="Paste a message below to preview which enabled filters would match.">
+            <TextArea rows={4} value={testMessage} onChange={(e) => setTestMessage(e.target.value.slice(0, 2000))}
+              placeholder="Example: join our server at discord.gg/example" />
+          </FieldGroup>
+          {testMessage.trim() && (
+            <div className="mt-3 rounded-card border border-base-700 bg-base-950/60 p-3">
+              {testFindings.length ? (
+                <>
+                  <p className="text-sm font-medium text-warn">Potential matches ({testFindings.length})</p>
+                  <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-base-300">
+                    {testFindings.map((finding, index) => <li key={`${finding}-${index}`}>{finding}</li>)}
+                  </ul>
+                  <p className="mt-2 text-xs text-base-500">Configured response: {draft?.action ?? "—"}</p>
+                </>
+              ) : (
+                <p className="text-sm text-good">{draft?.enabled ? "No configured text filters matched this sample." : "AutoMod is disabled, so no rules would run."}</p>
+              )}
+            </div>
+          )}
         </Card>
         <Card title="Action policy" description="Choose the default response to a detected violation. Timeout length is configured below.">
           <FieldGroup label="Default moderation action">
