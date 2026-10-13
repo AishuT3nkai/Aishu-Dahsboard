@@ -80,7 +80,8 @@ function WarningsPanel() {
 
   return (
     <Card title="Warnings" description="Every warning issued via /warn across the server.">
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-xs text-base-500">{warnings?.length ?? 0} warning{warnings?.length === 1 ? "" : "s"} on record</div>
         <Button variant="secondary" onClick={() => void load()} disabled={loading}>
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
@@ -90,18 +91,36 @@ function WarningsPanel() {
         <p className="text-sm text-base-500">Select a Discord server to view its warnings.</p>
       )}
       {error && <div role="alert" className="text-sm text-bad">{error}</div>}
-      {warnings && warnings.length === 0 && <p className="text-sm text-base-500">No warnings on record.</p>}
       {warnings && warnings.length > 0 && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+          <FieldGroup label="Search warning records" hint="Search username, user ID, moderator ID, reason, or warning ID.">
+            <TextInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="e.g. spam, user ID, or reason" />
+          </FieldGroup>
+          <FieldGroup label="Sort by date">
+            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as "newest" | "oldest")} className="focus-ring w-full rounded-card border border-base-700 bg-base-900 px-3 py-2 text-sm text-base-100">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </FieldGroup>
+        </div>
+      )}
+      {warnings && warnings.length === 0 && <p className="text-sm text-base-500">No warnings on record.</p>}
+      {warnings && warnings.length > 0 && filteredWarnings.length === 0 && <p className="text-sm text-base-500">No warnings match “{search}”. Try another name, ID, or keyword.</p>}
+      {warnings && filteredWarnings.length > 0 && (
         <div className="space-y-2">
-          {warnings.map((w) => (
+          {filteredWarnings.map((w) => (
             <div
               key={w.id}
               className="flex flex-col gap-2 rounded-card border border-base-800 bg-base-950 p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <div className="text-sm font-medium text-base-100">{w.username}</div>
-                <div className="truncate text-xs text-base-400">{w.reason}</div>
-                <div className="text-xs text-base-500">{new Date(w.createdAt).toLocaleString()}</div>
+                <div className="break-words text-xs text-base-400">{w.reason || "No reason provided"}</div>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-500">
+                  <span>{new Date(w.createdAt).toLocaleString()}</span>
+                  <span>User ID: {w.userId}</span>
+                  <span>Moderator ID: {w.moderatorId}</span>
+                </div>
               </div>
               <Button variant="danger" onClick={() => clear(w.id)} className="shrink-0">
                 Clear
