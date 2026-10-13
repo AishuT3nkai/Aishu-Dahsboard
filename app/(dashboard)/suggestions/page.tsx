@@ -21,8 +21,6 @@ function SuggestionsList() {
   const [bridgeUnconfigured, setBridgeUnconfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "denied">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | SuggestionEntry["status"]>("pending");
@@ -58,17 +56,6 @@ function SuggestionsList() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const filteredItems = (items ?? []).filter((suggestion) => {
-    const query = search.trim().toLocaleLowerCase();
-    const matchesSearch = !query || [suggestion.username, suggestion.userId, suggestion.content, suggestion.id]
-      .some((value) => value.toLocaleLowerCase().includes(query));
-    return matchesSearch && (statusFilter === "all" || suggestion.status === statusFilter);
-  }).sort((a, b) => {
-    const aTime = Date.parse(a.createdAt);
-    const bTime = Date.parse(b.createdAt);
-    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
-  });
 
   const filteredItems = (items ?? [])
     .filter((suggestion) => {
