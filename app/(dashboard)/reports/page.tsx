@@ -103,6 +103,20 @@ function ReportsList() {
       {!loading && guildId && !bridgeUnconfigured && !error && items && items.length === 0 && <p className="text-sm text-base-500">No reports yet.</p>}
       {!loading && guildId && !bridgeUnconfigured && !error && items && items.length > 0 && (
         <>
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-card border border-base-800 bg-base-950 p-3">
+              <div className="text-xs text-base-500">Total reports</div>
+              <div className="mt-1 text-xl font-semibold text-base-100">{items.length}</div>
+            </div>
+            <div className="rounded-card border border-base-800 bg-base-950 p-3">
+              <div className="text-xs text-base-500">Open reports</div>
+              <div className="mt-1 text-xl font-semibold text-warn">{items.filter((report) => report.status === "open").length}</div>
+            </div>
+            <div className="rounded-card border border-base-800 bg-base-950 p-3">
+              <div className="text-xs text-base-500">Closed reports</div>
+              <div className="mt-1 text-xl font-semibold text-base-100">{items.filter((report) => report.status === "closed").length}</div>
+            </div>
+          </div>
           <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_150px]">
             <FieldGroup label="Search reports" hint="Search username, user ID, report ID, or report text.">
               <TextInput value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reports…" />
