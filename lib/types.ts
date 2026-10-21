@@ -10,6 +10,19 @@ export interface DiscordGuildSummary {
   icon: string | null;
 }
 
+export interface GuildChannelOption {
+  id: string;
+  name: string;
+  type: "text" | "announcement";
+}
+
+export interface GuildRoleOption {
+  id: string;
+  name: string;
+  position: number;
+  managed: boolean;
+}
+
 export interface OverviewStats {
   botOnline: boolean;
   botLatencyMs: number | null;
