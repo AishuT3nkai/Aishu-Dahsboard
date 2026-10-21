@@ -102,6 +102,16 @@ export const bridge = {
   listBotGuilds: () =>
     bridgeFetch<{ id: string; name: string; memberCount: number }[]>("/api/guilds"),
 
+  // --- Safe guild resource lookups ---
+  listGuildChannels: (guildId: string) =>
+    bridgeFetch<{ id: string; name: string; type: "text" | "announcement" }[]>(
+      `/api/guilds/${encodeURIComponent(guildId)}/channels`
+    ),
+  listGuildRoles: (guildId: string) =>
+    bridgeFetch<{ id: string; name: string; position: number; managed: boolean }[]>(
+      `/api/guilds/${encodeURIComponent(guildId)}/roles`
+    ),
+
   // --- Overview ---
   getOverview: (guildId: string) =>
     bridgeFetch(`/api/guilds/${encodeURIComponent(guildId)}/overview`),
