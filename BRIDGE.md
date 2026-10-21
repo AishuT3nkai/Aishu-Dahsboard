@@ -2,7 +2,7 @@
 
 The dashboard does not open the bot's local SQLite database. Vercel and the bot host do not share a filesystem, and the bot may be writing to the database while the dashboard is running. Instead, the **Aishu Bot process** must expose a private HTTP API (the bridge) that the dashboard calls from server-side route handlers.
 
-As of October 2026, this bridge has **not yet been implemented in `AishuT3nkai/Aishu-Bot`**. Until it exists and `BOT_API_BASE_URL` / `BOT_API_SHARED_SECRET` are configured correctly, configuration pages must continue to show an unavailable/error state rather than inventing or pretending to save real bot settings.
+The bot repository now contains an authenticated `aiohttp` bridge started with the bot lifecycle. The core route families listed below are implemented, and channel/role lookup endpoints are being added alongside stronger input and permission validation. Live calls still require `BOT_API_BASE_URL` and a matching `BOT_API_SHARED_SECRET` to be configured on the dashboard and bot host. A route existing does not prove every stored field is consumed by the bot runtime; the known runtime gaps at the end of this document remain non-live until verified end to end.
 
 ## Transport and authentication
 
@@ -50,46 +50,37 @@ All paths are relative to `BOT_API_BASE_URL`.
 
 The canonical response shapes live in `lib/types.ts`. PUT bodies are validated with Zod by the dashboard, but the bridge must validate independently. Use the existing bot's database patterns and migrations; do not create parallel data that the bot never reads.
 
-## Additional bridge contract needed to finish dashboard features
+## Additional feature status
 
-These are **requirements to implement before the matching dashboard controls can be called live**. They are not currently implemented by this dashboard repo or the bot.
-
-### Channel and role lookup
+### Channel and role lookup — implemented in the bot bridge
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/guilds/:id/channels` | Return selectable text/announcement channels with `id`, `name`, and `type`; omit channels the bot cannot use |
-| GET | `/api/guilds/:id/roles` | Return selectable roles with `id`, `name`, `position`, and `managed`; exclude @everyone and integration-managed roles from assignment |
+| GET | `/api/guilds/:id/channels` | Selectable text/announcement channels with `id`, `name`, and `type`; channels the bot cannot view and send in are omitted |
+| GET | `/api/guilds/:id/roles` | Selectable roles with `id`, `name`, `position`, and `managed`; @everyone, integration-managed roles, and roles at/above the bot's top role are excluded |
 
-The bridge must check guild membership and permissions and must never let a submitted channel/role ID bypass those checks.
+The dashboard now has authenticated server-side lookup routes at `/api/dashboard/channels?guildId=...` and `/api/dashboard/roles?guildId=...`. Keep manual-ID fields until selectors are wired to these routes. The bot bridge independently validates submitted channel/role IDs and role hierarchy.
 
-### Advanced anti-raid
+### Advanced anti-raid — draft-only
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET / PUT | `/api/guilds/:id/anti-raid` | Read/write a validated per-guild policy: enabled, captcha, quarantine, account-age gate, join-rate threshold/window, minimum account age, verification timeout, and attempt limit |
+The verification page's advanced anti-raid controls are stored only in browser local storage. Do not add a live save endpoint or display them as active protection until the bot enforces the complete policy in join/verification events: captcha, quarantine, account-age gate, join-rate threshold/window, minimum account age, verification timeout, and attempt limit. The bot's existing anti-raid cog currently implements its own join-rate lockdown policy; that is not equivalent to the complete dashboard policy.
 
-The bot must enforce this policy in actual join/verification events. Persisting the values alone is not enforcement. Until that work exists, the UI must label these values as local drafts and must not suggest that protection is active.
+### Webhook management — draft-only
 
-### Webhook management
+No live webhook management endpoints are enabled yet. The UI must continue to state that values are previews/drafts and must not claim that a webhook is saved, tested, or delivering events.
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/guilds/:id/webhooks` | Return configured webhook metadata and subscribed event names; never return stored endpoint secrets |
-| POST | `/api/guilds/:id/webhooks` | Validate an HTTPS endpoint and event allowlist, then store the secret securely server-side |
-| PATCH | `/api/guilds/:id/webhooks/:webhookId` | Update endpoint/events or enable state after ownership checks |
-| DELETE | `/api/guilds/:id/webhooks/:webhookId` | Disable and remove a webhook configuration |
-| POST | `/api/guilds/:id/webhooks/:webhookId/test` | Send an explicitly requested test event and return a redacted delivery result |
-| GET | `/api/guilds/:id/webhooks/:webhookId/deliveries` | Return redacted delivery status, attempt count, and timestamps; never include endpoint secrets or full sensitive payloads |
-
-Webhook delivery must use signed payloads, bounded timeouts, retries with backoff, SSRF protection (including blocking private/link-local/reserved IP ranges and re-validating redirects/DNS), secret encryption at rest, rate limits, and redacted logs. Never let a webhook endpoint target internal metadata services or arbitrary private network hosts.
+Before enabling webhook endpoints, implement all of the following server-side:
+- Allowlisted event names and HTTPS-only endpoint URLs.
+- SSRF protection for public DNS resolution, private/link-local/reserved IP ranges, redirects, and DNS rebinding.
+- Encrypted endpoint secrets at rest; never return them in API responses.
+- Signed payloads, bounded request timeouts, retry/backoff, per-guild rate limits, and redacted delivery logs.
+- Ownership checks for update/delete/test operations and redacted delivery history.
 
 ## Known integration gaps
 
-- **The bridge itself is absent.** Every live read/write in the dashboard depends on the endpoints above.
-- **Leveling persistence and runtime behavior** require bot-side tables, XP update logic, rewards, and any intended rank/leaderboard commands.
-- **Per-guild configuration persistence** is required for verification, welcome/goodbye, moderation, tickets, suggestions, reports, birthday, autorole, AutoMod, and server settings.
-- **Channel and role lookup endpoints** must be added before replacing manual-ID fields with selectors.
-- **Webhook management** remains draft-only until secure storage, event subscriptions, signing, delivery retry/backoff, SSRF protection, and redacted operational logs are implemented.
-- **Advanced anti-raid settings** are browser-only drafts until bridge-backed persistence and bot enforcement exist.
+- The bridge requires a strong shared secret and a private HTTPS path from Vercel to the bot host. Never expose the raw bridge port publicly.
+- Some fields currently stored in the bridge's generic configuration table (for example, custom welcome text, ticket templates, birthday announcement format, leveling policy/rewards, and server prefix) must be checked against the actual bot runtime before being called live. A successful database write alone is not proof the bot uses the value.
+- Leveling requires verified bot-side XP update logic, reward assignment, and rank/leaderboard behavior. Keep controls that are not connected to runtime behavior clearly marked until tested end to end.
+- Advanced anti-raid settings remain browser-only drafts until full policy enforcement exists.
+- Webhook management remains draft-only until secure storage, event subscriptions, signing, delivery retry/backoff, SSRF protection, rate limits, and redacted operational logs are implemented.
 - Dashboard equivalents should only replace or disable existing Discord setup/panel commands after the corresponding bridge-backed feature has been verified end to end.
