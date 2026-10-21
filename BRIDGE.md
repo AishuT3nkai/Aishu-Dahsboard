@@ -2,7 +2,7 @@
 
 The dashboard does not open the bot's local SQLite database. Vercel and the bot host do not share a filesystem, and the bot may be writing to the database while the dashboard is running. Instead, the **Aishu Bot process** must expose a private HTTP API (the bridge) that the dashboard calls from server-side route handlers.
 
-The bot repository now contains an authenticated `aiohttp` bridge started with the bot lifecycle. The core route families listed below are implemented, and channel/role lookup endpoints are being added alongside stronger input and permission validation. Live calls still require `BOT_API_BASE_URL` and a matching `BOT_API_SHARED_SECRET` to be configured on the dashboard and bot host. A route existing does not prove every stored field is consumed by the bot runtime; the known runtime gaps at the end of this document remain non-live until verified end to end.
+The bot repository now contains an authenticated `aiohttp` bridge started with the bot lifecycle. The core route families listed below and the channel/role lookup endpoints are implemented, with stronger input and permission validation. Live calls still require `BOT_API_BASE_URL` and a matching `BOT_API_SHARED_SECRET` to be configured on the dashboard and bot host. A route existing does not prove every stored field is consumed by the bot runtime; the known runtime gaps at the end of this document remain non-live until verified end to end.
 
 ## Transport and authentication
 
